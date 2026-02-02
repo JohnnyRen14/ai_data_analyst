@@ -74,31 +74,6 @@ TO public
 USING (bucket_id = 'csv-files');
 ```
 
-### 4. Enable Row Level Security (Optional)
-
-If you want to add authentication later:
-
-```sql
--- Enable RLS on sessions
-ALTER TABLE sessions ENABLE ROW LEVEL SECURITY;
-
--- Enable RLS on data_profiles
-ALTER TABLE data_profiles ENABLE ROW LEVEL SECURITY;
-
--- For now, allow all operations (update these when you add auth)
-CREATE POLICY "Allow all on sessions"
-ON sessions FOR ALL
-TO public
-USING (true)
-WITH CHECK (true);
-
-CREATE POLICY "Allow all on data_profiles"
-ON data_profiles FOR ALL
-TO public
-USING (true)
-WITH CHECK (true);
-```
-
 ## Update Environment Variables
 
 After setting up the database, update your `.env` file:
@@ -152,14 +127,4 @@ If you can't connect to Supabase:
 2. Check your anon key is the "anon/public" key, not the service key
 3. Ensure the project is not paused (free tier project sleep after inactivity)
 
-## Optional: Sample Data
 
-To test the application with sample data, you can insert a test session:
-
-```sql
-INSERT INTO sessions (file_name, status)
-VALUES ('test_data.csv', 'uploaded')
-RETURNING id;
-```
-
-Then use the returned ID to test your API endpoints.

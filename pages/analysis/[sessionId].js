@@ -191,6 +191,7 @@ export default function AnalysisPage() {
                   onClick={() => handlePreprocessing('z-score')}
                   className="btn-primary"
                   disabled={loading}
+                  title="Z-Score Normalization (Standardization) scales data to have a mean of 0 and standard deviation of 1. Best for data with outliers or Gaussian distribution."
                 >
                   Apply Z-Score Normalization
                 </button>
@@ -198,6 +199,7 @@ export default function AnalysisPage() {
                   onClick={() => handlePreprocessing('min-max')}
                   className="btn-secondary"
                   disabled={loading}
+                  title="Min-Max Normalization rescales data to a fixed range, usually 0 to 1. Best when you know the bounds of your data and want to preserve relative relationships."
                 >
                   Apply Min-Max Normalization
                 </button>
