@@ -1,40 +1,227 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# AI Data Analytics Platform
 
-## Getting Started
+A comprehensive AI-powered data analytics platform that transforms CSV data into actionable insights through automated ETL, intelligent preprocessing, and multi-dimensional analysis.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-16.1.4-black)
+![Supabase](https://img.shields.io/badge/Supabase-Integrated-green)
+![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-blue)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## ✨ Features
+
+### 🔄 Smart ETL Pipeline
+
+- Automatic CSV parsing and data type inference
+- Intelligent data cleaning (duplicates, missing values)
+- Statistical profiling and data quality assessment
+
+### ⚙️ Advanced Preprocessing
+
+- Z-Score normalization
+- Min-Max scaling
+- AI-recommended preprocessing strategies
+
+### 💡 Business Understanding
+
+- Conversational AI interface to capture objectives
+- Dynamic questionnaire system
+- Automated analysis plan generation
+
+### 📊 Data Understanding
+
+- Automated data profiling
+- Pattern and correlation detection
+- AI-powered insight generation
+
+### 📈 Interactive Visualizations
+
+- Line, Bar, Scatter, and Pie charts
+- Dynamic visualization recommendations
+- Responsive design with Recharts
+
+### 🎯 Triple Analysis Framework
+
+1. **Descriptive**: What happened in the data
+2. **Predictive**: What's likely to happen
+3. **Prescriptive**: What actions to take
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- Supabase account ([sign up here](https://supabase.com))
+- OpenAI API key ([get one here](https://platform.openai.com))
+
+### Installation
+
+1. **Clone the repository**
+
+   ```bash
+   git clone <your-repo-url>
+   cd ai_data_analyst
+   ```
+
+2. **Install dependencies**
+
+   ```bash
+   npm install
+   ```
+
+3. **Set up Supabase**
+   - Follow the instructions in [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
+   - Create the required tables and storage bucket
+
+4. **Configure environment variables**
+
+   Update `.env` with your credentials:
+
+   ```bash
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   OPENAI_API_KEY=sk-your-openai-key
+   ```
+
+5. **Run the development server**
+
+   ```bash
+   npm run dev
+   ```
+
+6. **Open your browser**
+
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 📖 Usage
+
+### 1. Upload CSV File
+
+- Drag and drop your CSV file or click to browse
+- Supports standard CSV format with headers
+
+### 2. ETL & Preview
+
+- Automatic data cleaning and type inference
+- View data preview with pagination
+- See statistics for each column
+
+### 3. Preprocessing (Optional)
+
+- Choose normalization method (Z-Score or Min-Max)
+- Apply to numeric columns automatically
+
+### 4. Business Understanding
+
+- Chat with AI about your objectives
+- AI asks targeted questions
+- Generates analysis plan based on your goals
+
+### 5. Data Insights
+
+- View automated data quality assessment
+- Discover patterns and correlations
+- Get AI recommendations
+
+### 6. Visualizations
+
+- View AI-generated charts and graphs
+- Interactive visualizations with Recharts
+
+### 7. Comprehensive Analysis
+
+- **Descriptive**: Current state insights
+- **Predictive**: Future trend forecasts
+- **Prescriptive**: Actionable recommendations
+
+## 🏗️ Architecture
+
+```
+ai_data_analyst/
+├── components/          # React components
+│   ├── Layout.js       # Main layout with sidebar
+│   ├── FileUploader.js # CSV upload component
+│   ├── DataPreview.js  # Data table with pagination
+│   ├── ChatInterface.js# AI chat for business understanding
+│   ├── VisualizationPanel.js # Charts display
+│   └── InsightsCard.js # Analysis cards
+├── pages/
+│   ├── index.js        # Landing page
+│   ├── analysis/[sessionId].js # Main dashboard
+│   └── api/            # API routes
+│       ├── upload.js   # File upload handler
+│       ├── etl.js      # ETL processing
+│       ├── preprocess.js # Normalization
+│       ├── business-chat.js # AI conversation
+│       ├── data-insights.js # Data analysis
+│       └── generate-analysis.js # Final insights
+├── lib/
+│   ├── supabaseClient.js # Supabase config
+│   └── openaiClient.js   # OpenAI config
+└── styles/
+    └── globals.css     # Global styles & design system
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🛠️ Tech Stack
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+- **Frontend**: Next.js 16, React 19, TailwindCSS 4
+- **Backend**: Next.js API Routes
+- **Database**: Supabase (PostgreSQL)
+- **Storage**: Supabase Storage
+- **AI**: OpenAI GPT-4
+- **Charts**: Recharts
+- **Data Processing**: CSV-Parse, Simple-Statistics
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+## 🔐 Security Notes
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+- OpenAI API key is server-side only (never exposed to client)
+- Supabase Row Level Security can be enabled for multi-user auth
+- File uploads are validated for CSV format
+- All API routes include error handling
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🎨 Design System
 
-## Learn More
+The platform features a premium dark theme with:
 
-To learn more about Next.js, take a look at the following resources:
+- Glassmorphism effects
+- Gradient accents
+- Smooth animations
+- Responsive layout
+- Custom scrollbars
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+## 📝 Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable                        | Description                  | Required |
+| ------------------------------- | ---------------------------- | -------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL    | Yes      |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key       | Yes      |
+| `OPENAI_API_KEY`                | OpenAI API key (server-side) | Yes      |
 
-## Deploy on Vercel
+## 🐛 Troubleshooting
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Build Errors
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+- Ensure all dependencies are installed: `npm install`
+- Check Node.js version: `node --version` (should be 18+)
+
+### Supabase Connection Issues
+
+- Verify your Supabase URL and anon key
+- Check that database tables are created (see SUPABASE_SETUP.md)
+- Ensure storage bucket `csv-files` exists
+
+### OpenAI API Errors
+
+- Verify your API key is valid
+- Check you have available credits
+- Ensure API key is in `.env` without quotes
+
+## 📄 License
+
+This project is created for educational and demonstration purposes.
+
+## 🤝 Contributing
+
+Feel free to submit issues and enhancement requests!
+
+---
+
+Built with ❤️ using Next.js, Supabase, and OpenAI
