@@ -144,7 +144,7 @@ export default function AnalysisPage() {
       <div className="max-w-7xl mx-auto">
         {/* Progress Header */}
         <div className="mb-8 glass-strong p-6 rounded-2xl">
-          <h1 className="text-3xl font-bold mb-4 gradient-primary bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold mb-4 text-gradient-primary">
             Analysis Pipeline
           </h1>
           <div className="flex items-center gap-2">

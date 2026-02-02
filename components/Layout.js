@@ -25,7 +25,7 @@ export default function Layout({ children }) {
         } glass-strong transition-all duration-300 p-4 flex flex-col fixed h-screen z-10`}
       >
         <div className="flex items-center justify-between mb-8">
-          <h1 className={`${sidebarOpen ? 'block' : 'hidden'} text-xl font-bold gradient-primary bg-clip-text text-transparent`}>
+          <h1 className={`${sidebarOpen ? 'block' : 'hidden'} text-xl font-bold text-gradient-primary`}>
             AI Analytics
           </h1>
           <button
@@ -60,8 +60,8 @@ export default function Layout({ children }) {
 
         {sidebarOpen && (
           <div className="mt-auto p-4 glass rounded-lg">
-            <p className="text-xs text-gray-400">
-              Powered by OpenAI & Supabase
+            <p className="text-xs text-gray-400 text-center">
+              By Lee Ren & Zhao Zheng
             </p>
           </div>
         )}

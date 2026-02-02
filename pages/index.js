@@ -18,7 +18,7 @@ export default function Home() {
         <div className="text-center mb-16 animate-fade-in">
           <div className="mb-6">
             <h1 className="text-6xl font-bold mb-4">
-              <span className="gradient-primary bg-clip-text text-transparent">
+              <span className="text-gradient-primary">
                 AI-Powered
               </span>
               <br />
