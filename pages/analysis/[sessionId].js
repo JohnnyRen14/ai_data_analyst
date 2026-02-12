@@ -45,23 +45,8 @@ export default function AnalysisPage() {
     }
   };
 
-  const handlePreprocessing = async (method = 'z-score') => {
-    setLoading(true);
-    try {
-      const response = await fetch('/api/preprocess', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, method }),
-      });
-
-      if (!response.ok) throw new Error('Preprocessing failed');
-      
-      setCurrentStep(3);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const handleProceedToBusiness = () => {
+    setCurrentStep(3);
   };
 
   const handleBusinessComplete = async (businessPlan) => {
@@ -148,7 +133,7 @@ export default function AnalysisPage() {
             Analysis Pipeline
           </h1>
           <div className="flex items-center gap-2">
-            {[1, 2, 3, 4, 5, 6, 7].map((step) => (
+            {[1, 2, 3, 4, 5, 6].map((step) => (
               <div
                 key={step}
                 className={`flex-1 h-2 rounded-full transition-all ${
@@ -158,7 +143,7 @@ export default function AnalysisPage() {
             ))}
           </div>
           <div className="mt-2 text-sm text-gray-400">
-            Step {currentStep} of 7
+            Step {currentStep} of 6
           </div>
         </div>
 
@@ -188,27 +173,11 @@ export default function AnalysisPage() {
             {currentStep === 2 && (
               <div className="mt-6 flex gap-4">
                 <button
-                  onClick={() => handlePreprocessing('z-score')}
+                  onClick={handleProceedToBusiness}
                   className="btn-primary"
                   disabled={loading}
-                  title="Z-Score Normalization (Standardization) scales data to have a mean of 0 and standard deviation of 1. Best for data with outliers or Gaussian distribution."
                 >
-                  Apply Z-Score Normalization
-                </button>
-                <button
-                  onClick={() => handlePreprocessing('min-max')}
-                  className="btn-secondary"
-                  disabled={loading}
-                  title="Min-Max Normalization rescales data to a fixed range, usually 0 to 1. Best when you know the bounds of your data and want to preserve relative relationships."
-                >
-                  Apply Min-Max Normalization
-                </button>
-                <button
-                  onClick={() => setCurrentStep(3)}
-                  className="btn-secondary"
-                  disabled={loading}
-                >
-                  Skip Preprocessing
+                  Proceed to Business Understanding
                 </button>
               </div>
             )}
