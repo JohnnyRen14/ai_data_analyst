@@ -3,6 +3,9 @@ import { parse } from 'csv-parse/sync';
 import fs from 'fs';
 import path from 'path';
 import { supabase } from '../../lib/supabaseClient';
+import { query, initializeTables } from '../../backend/db.js';
+import { analyzeTable } from '../../backend/table-analyzer.js';
+import { normalizeColumnName, guessSqlType } from '../../backend/utils.js';
 
 export const config = {
   api: {
@@ -16,17 +19,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Parse form data
-    const form = formidable({
-      uploadDir: path.join(process.cwd(), 'tmp'),
-      keepExtensions: true,
-    });
-
     // Ensure tmp directory exists
     const tmpDir = path.join(process.cwd(), 'tmp');
     if (!fs.existsSync(tmpDir)) {
       fs.mkdirSync(tmpDir, { recursive: true });
     }
+
+    // Parse form data
+    const form = formidable({
+      uploadDir: tmpDir,
+      keepExtensions: true,
+    });
 
     const [fields, files] = await new Promise((resolve, reject) => {
       form.parse(req, (err, fields, files) => {
@@ -53,34 +56,67 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'CSV file is empty' });
     }
 
-    // Create session in Supabase
+    // --- STEP 1: Supabase Session & Storage ---
     const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .insert([
-        {
-          file_name: file.originalFilename || 'unknown.csv',
-          status: 'uploaded',
-        },
-      ])
+      .insert([{
+        file_name: file.originalFilename || 'unknown.csv',
+        status: 'uploaded',
+      }])
       .select()
       .single();
 
-    if (sessionError) {
-      console.error('Session creation error:', sessionError);
-      return res.status(500).json({ error: 'Failed to create session' });
-    }
+    if (sessionError) throw sessionError;
 
-    // Upload file to Supabase Storage
     const fileName = `${session.id}/${file.originalFilename}`;
-    const { error: uploadError } = await supabase.storage
+    await supabase.storage
       .from('csv-files')
-      .upload(fileName, fileContent, {
-        contentType: 'text/csv',
-      });
+      .upload(fileName, fileContent, { contentType: 'text/csv' });
 
-    if (uploadError) {
-      console.error('File upload error:', uploadError);
+    // --- STEP 2: PostgreSQL Table Creation (for AI) ---
+    await initializeTables();
+    
+    // Generate tableName if not provided in fields
+    const tableName = fields.tableName?.[0] || 
+      file.originalFilename.replace('.csv', '').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+
+    // Determine column types
+    const columns = Object.keys(records[0]).map(normalizeColumnName);
+    const columnTypes = new Map();
+    columns.forEach((column, index) => {
+      const originalColumn = Object.keys(records[0])[index];
+      const values = records.map(row => row[originalColumn]).filter(v => v !== null && v !== '');
+      columnTypes.set(column, guessSqlType(values[0]));
+    });
+
+    // Create table
+    await query(`DROP TABLE IF EXISTS "${tableName}"`);
+    const createTableSQL = `
+      CREATE TABLE "${tableName}" (
+        ${columns.map(column => `"${column}" ${columnTypes.get(column)}`).join(',\n')}
+      )
+    `;
+    await query(createTableSQL);
+
+    // Insert all records
+    for (const record of records) {
+      const originalColumns = Object.keys(record);
+      const insertSQL = `
+        INSERT INTO "${tableName}" (${columns.map(c => `"${c}"`).join(', ')})
+        VALUES (${columns.map((_, i) => `$${i + 1}`).join(', ')})
+      `;
+      await query(insertSQL, originalColumns.map(c => record[c]));
     }
+
+    // Analyze table and store in schema
+    const analysis = await analyzeTable(tableName);
+    await query(
+      `INSERT INTO TABLE_SCHEMA (table_name, analysis)
+       VALUES ($1, $2)
+       ON CONFLICT (table_name) 
+       DO UPDATE SET analysis = $2, updated_at = CURRENT_TIMESTAMP`,
+      [tableName, analysis]
+    );
 
     // Clean up local file
     fs.unlinkSync(file.filepath);
@@ -88,12 +124,13 @@ export default async function handler(req, res) {
     res.status(200).json({
       success: true,
       sessionId: session.id,
-      fileName: file.originalFilename,
+      tableName,
       rowCount: records.length,
-      preview: records.slice(0, 5),
+      analysis
     });
+
   } catch (error) {
-    console.error('Upload error:', error);
-    res.status(500).json({ error: 'Failed to upload file' });
+    console.error('Unified upload error:', error);
+    res.status(500).json({ error: 'Upload and processing failed' });
   }
 }

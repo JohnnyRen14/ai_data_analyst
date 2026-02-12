@@ -55,6 +55,9 @@ export default function FileUploader({ onUploadSuccess }) {
     try {
       const formData = new FormData();
       formData.append('file', file);
+      // Generate a cleaner table name from the filename
+      const tableName = file.name.replace('.csv', '').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
+      formData.append('tableName', tableName);
 
       const response = await fetch('/api/upload', {
         method: 'POST',
