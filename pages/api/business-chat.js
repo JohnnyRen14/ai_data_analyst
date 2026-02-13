@@ -1,4 +1,4 @@
-import { getOpenAIClient } from '../../lib/openaiClient';
+import { getGeminiClient } from '../../lib/geminiClient';
 import { supabase } from '../../lib/supabaseClient';
 
 export default async function handler(req, res) {
@@ -27,7 +27,8 @@ export default async function handler(req, res) {
       .eq('session_id', sessionId)
       .single();
 
-    const openai = getOpenAIClient();
+    const genAI = getGeminiClient();
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const systemPrompt = `You are an AI data analyst assistant helping to understand the user's business objectives.
 
@@ -46,17 +47,23 @@ Ask 2-3 follow-up questions maximum. Once you have enough information, summarize
 
 Be conversational, professional, and concise.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages,
-      ],
-      temperature: 0.7,
-      max_tokens: 500,
+    // Convert messages to Gemini format (role: user/model)
+    const history = messages.slice(0, -1).map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }]
+    }));
+    const userMsg = messages[messages.length - 1].content;
+
+    const chat = model.startChat({
+      history: [
+        { role: 'user', parts: [{ text: systemPrompt }] },
+        { role: 'model', parts: [{ text: "Understood. I'm ready to help understand your business objectives." }] },
+        ...history
+      ]
     });
 
-    const assistantMessage = completion.choices[0].message.content;
+    const result = await chat.sendMessage(userMsg);
+    const assistantMessage = result.response.text();
 
     // Check if conversation is complete
     const isComplete = assistantMessage
@@ -64,24 +71,16 @@ Be conversational, professional, and concise.`;
       .includes('i have all the information i need');
 
     if (isComplete) {
-      // Generate business plan
-      const planCompletion = await openai.chat.completions.create({
-        model: 'gpt-4',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...messages,
-          { role: 'assistant', content: assistantMessage },
-          {
-            role: 'user',
-            content:
-              'Based on our conversation, create a structured analysis plan in JSON format with: objectives (array), keyMetrics (array), expectedInsights (array), and recommendedVisualizations (array).',
-          },
-        ],
-        temperature: 0.5,
-        response_format: { type: 'json_object' },
+      // Generate business plan using JSON mode
+      const jsonModel = genAI.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        generationConfig: { responseMimeType: "application/json" }
       });
 
-      const businessPlan = JSON.parse(planCompletion.choices[0].message.content);
+      const planPrompt = `${systemPrompt}\n\nConversation History:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}\n\nAssistant: ${assistantMessage}\n\nUser: Based on our conversation, create a structured analysis plan in JSON format with: objectives (array), keyMetrics (array), expectedInsights (array), and recommendedVisualizations (array).`;
+
+      const planResult = await jsonModel.generateContent(planPrompt);
+      const businessPlan = JSON.parse(planResult.response.text());
 
       // Store in database
       await supabase

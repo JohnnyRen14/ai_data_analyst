@@ -1,4 +1,4 @@
-import { getOpenAIClient } from '../../lib/openaiClient';
+import { getGeminiClient } from '../../lib/geminiClient';
 import { supabase } from '../../lib/supabaseClient';
 
 export default async function handler(req, res) {
@@ -28,7 +28,13 @@ export default async function handler(req, res) {
       ? session.data_profiles[0]
       : session.data_profiles;
 
-    const openai = getOpenAIClient();
+    const genAI = getGeminiClient();
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    });
 
     // Generate all three types of analysis
     const analysisPrompt = `You are an expert data analyst. Provide comprehensive analysis for the following dataset:
@@ -55,21 +61,9 @@ Provide analysis in JSON format with these sections:
 
 Make insights specific, actionable, and relevant to the business objectives.`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are an expert data analyst specializing in comprehensive data analysis.',
-        },
-        { role: 'user', content: analysisPrompt },
-      ],
-      temperature: 0.7,
-      response_format: { type: 'json_object' },
-      max_tokens: 2000,
-    });
-
-    const analysis = JSON.parse(completion.choices[0].message.content);
+    const result = await model.generateContent(analysisPrompt);
+    const response = await result.response;
+    const analysis = JSON.parse(response.text());
 
     // Update session status
     await supabase

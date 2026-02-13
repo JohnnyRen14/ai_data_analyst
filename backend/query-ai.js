@@ -1,26 +1,25 @@
-import OpenAI from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ 
+  model: "gemini-1.5-flash",
+  generationConfig: {
+    responseMimeType: "application/json",
+  }
 });
 
 /**
- * Queries the AI model (GPT-4o-mini).
+ * Queries the AI model (Gemini 1.5 Flash).
  * @param {string} systemPrompt 
  * @param {string} userPrompt 
  * @param {boolean} jsonMode 
  * @returns {Promise<string>}
  */
 export async function queryAI(systemPrompt, userPrompt, jsonMode = false) {
-  const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt }
-    ],
-    temperature: 0.7,
-    response_format: jsonMode ? { type: "json_object" } : undefined,
-  });
-
-  return completion.choices[0].message.content || "";
+  // Combine system and user prompts for Gemini
+  const prompt = `System: ${systemPrompt}\n\nUser: ${userPrompt}`;
+  
+  const result = await model.generateContent(prompt);
+  const response = await result.response;
+  return response.text();
 }

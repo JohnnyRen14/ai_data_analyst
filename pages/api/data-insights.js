@@ -1,4 +1,4 @@
-import { getOpenAIClient } from '../../lib/openaiClient';
+import { getGeminiClient } from '../../lib/geminiClient';
 import { supabase } from '../../lib/supabaseClient';
 
 export default async function handler(req, res) {
@@ -28,7 +28,13 @@ export default async function handler(req, res) {
       ? session.data_profiles[0]
       : session.data_profiles;
 
-    const openai = getOpenAIClient();
+    const genAI = getGeminiClient();
+    const model = genAI.getGenerativeModel({ 
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+      }
+    });
 
     // Generate data insights
     const dataContext = {
@@ -39,7 +45,7 @@ export default async function handler(req, res) {
       dataTypes: profile.data_types,
     };
 
-    const systemPrompt = `You are an expert data analyst. Analyze the following dataset and provide deep insights.
+    const prompt = `System: You are an expert data analyst. Analyze the following dataset and provide deep insights.
 
 Dataset Information:
 ${JSON.stringify(dataContext, null, 2)}
@@ -56,22 +62,13 @@ Format your response as a JSON object with these keys:
 - dataQuality: Array of quality observations
 - patterns: Array of identified patterns
 - recommendations: Array of analysis recommendations
-- visualizations: Array of {type, xKey, yKey, title, description}`;
+- visualizations: Array of {type, xKey, yKey, title, description}
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: 'Analyze this dataset and provide comprehensive insights.',
-        },
-      ],
-      temperature: 0.6,
-      response_format: { type: 'json_object' },
-    });
+User: Analyze this dataset and provide comprehensive insights.`;
 
-    const insights = JSON.parse(completion.choices[0].message.content);
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const insights = JSON.parse(response.text());
 
     // Update session status
     await supabase
