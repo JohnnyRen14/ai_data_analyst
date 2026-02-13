@@ -1,5 +1,5 @@
 import { query } from './db.js';
-import { queryAI } from './query-ai.js';
+import { queryAI, AIError } from './query-ai.js';
 
 /**
  * Analyzes a table and generates a summary using AI.
@@ -65,6 +65,14 @@ export async function analyzeTable(tableName, sampleSize = 1000, maxDistinctValu
 
   } catch (error) {
     console.error('Error analyzing table:', error);
+
+    if (error instanceof AIError) {
+      const err = new Error(`AI analysis failed: ${error.message}`);
+      err.retryable = error.retryable;
+      err.status = error.status;
+      throw err;
+    }
+
     throw new Error('Failed to analyze table');
   }
 }

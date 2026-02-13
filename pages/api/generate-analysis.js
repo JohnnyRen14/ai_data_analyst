@@ -1,4 +1,4 @@
-import { getGeminiClient } from '../../lib/geminiClient';
+import { generateJSON, AIError } from '../../backend/query-ai';
 import { supabase } from '../../lib/supabaseClient';
 
 export default async function handler(req, res) {
@@ -28,9 +28,6 @@ export default async function handler(req, res) {
       ? session.data_profiles[0]
       : session.data_profiles;
 
-    const ai = getGeminiClient();
-
-    // Generate all three types of analysis
     const analysisPrompt = `You are an expert data analyst. Provide comprehensive analysis for the following dataset:
 
 Dataset: ${session.file_name}
@@ -55,14 +52,7 @@ Provide analysis in JSON format with these sections:
 
 Make insights specific, actionable, and relevant to the business objectives.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: analysisPrompt,
-      config: {
-        responseMimeType: "application/json",
-      },
-    });
-    const analysis = JSON.parse(response.text);
+    const analysis = await generateJSON(analysisPrompt);
 
     // Update session status
     await supabase
@@ -79,6 +69,16 @@ Make insights specific, actionable, and relevant to the business objectives.`;
     });
   } catch (error) {
     console.error('Analysis generation error:', error);
+
+    if (error instanceof AIError) {
+      const statusCode = error.retryable ? 503 : 500;
+      return res.status(statusCode).json({
+        error: 'Failed to generate analysis',
+        message: error.message,
+        retryable: error.retryable,
+      });
+    }
+
     res.status(500).json({ error: 'Failed to generate analysis' });
   }
 }

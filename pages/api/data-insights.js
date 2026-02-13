@@ -1,4 +1,4 @@
-import { getGeminiClient } from '../../lib/geminiClient';
+import { generateJSON, AIError } from '../../backend/query-ai';
 import { supabase } from '../../lib/supabaseClient';
 
 export default async function handler(req, res) {
@@ -27,8 +27,6 @@ export default async function handler(req, res) {
     const profile = Array.isArray(session.data_profiles)
       ? session.data_profiles[0]
       : session.data_profiles;
-
-    const ai = getGeminiClient();
 
     // Generate data insights
     const dataContext = {
@@ -60,14 +58,7 @@ Format your response as a JSON object with these keys:
 
 User: Analyze this dataset and provide comprehensive insights.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-      },
-    });
-    const insights = JSON.parse(response.text);
+    const insights = await generateJSON(prompt);
 
     // Update session status
     await supabase
@@ -81,6 +72,16 @@ User: Analyze this dataset and provide comprehensive insights.`;
     });
   } catch (error) {
     console.error('Data insights error:', error);
+
+    if (error instanceof AIError) {
+      const statusCode = error.retryable ? 503 : 500;
+      return res.status(statusCode).json({
+        error: 'Failed to generate insights',
+        message: error.message,
+        retryable: error.retryable,
+      });
+    }
+
     res.status(500).json({ error: 'Failed to generate insights' });
   }
 }

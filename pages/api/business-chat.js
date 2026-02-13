@@ -1,4 +1,4 @@
-import { getGeminiClient } from '../../lib/geminiClient';
+import { createChat, generateJSON, AIError } from '../../backend/query-ai';
 import { supabase } from '../../lib/supabaseClient';
 
 export default async function handler(req, res) {
@@ -27,8 +27,6 @@ export default async function handler(req, res) {
       .eq('session_id', sessionId)
       .single();
 
-    const ai = getGeminiClient();
-
     const systemPrompt = `You are an AI data analyst assistant helping to understand the user's business objectives.
 
 Context:
@@ -53,8 +51,7 @@ Be conversational, professional, and concise.`;
     }));
     const userMsg = messages[messages.length - 1].content;
 
-    const chat = ai.chats.create({
-      model: "gemini-3-flash-preview",
+    const chat = createChat({
       history: [
         { role: 'user', parts: [{ text: systemPrompt }] },
         { role: 'model', parts: [{ text: "Understood. I'm ready to help understand your business objectives." }] },
@@ -62,8 +59,7 @@ Be conversational, professional, and concise.`;
       ]
     });
 
-    const result = await chat.sendMessage({ message: userMsg });
-    const assistantMessage = result.text;
+    const assistantMessage = await chat.sendMessage(userMsg);
 
     // Check if conversation is complete
     const isComplete = assistantMessage
@@ -74,14 +70,7 @@ Be conversational, professional, and concise.`;
       // Generate business plan using JSON mode
       const planPrompt = `${systemPrompt}\n\nConversation History:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}\n\nAssistant: ${assistantMessage}\n\nUser: Based on our conversation, create a structured analysis plan in JSON format with: objectives (array), keyMetrics (array), expectedInsights (array), and recommendedVisualizations (array).`;
 
-      const planResult = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: planPrompt,
-        config: {
-          responseMimeType: "application/json",
-        },
-      });
-      const businessPlan = JSON.parse(planResult.text);
+      const businessPlan = await generateJSON(planPrompt);
 
       // Store in database
       await supabase
@@ -105,6 +94,16 @@ Be conversational, professional, and concise.`;
     });
   } catch (error) {
     console.error('Business chat error:', error);
+
+    if (error instanceof AIError) {
+      const statusCode = error.retryable ? 503 : 500;
+      return res.status(statusCode).json({
+        error: 'Failed to process conversation',
+        message: error.message,
+        retryable: error.retryable,
+      });
+    }
+
     res.status(500).json({ error: 'Failed to process conversation' });
   }
 }
