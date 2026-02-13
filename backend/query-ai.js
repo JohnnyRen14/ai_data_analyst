@@ -1,25 +1,27 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-1.5-flash",
-  generationConfig: {
-    responseMimeType: "application/json",
-  }
-});
+import { getGeminiClient } from '../lib/geminiClient';
 
 /**
- * Queries the AI model (Gemini 1.5 Flash).
+ * Queries the AI model (Gemini 3 Flash Preview).
  * @param {string} systemPrompt 
  * @param {string} userPrompt 
  * @param {boolean} jsonMode 
  * @returns {Promise<string>}
  */
 export async function queryAI(systemPrompt, userPrompt, jsonMode = false) {
+  const ai = getGeminiClient();
+
   // Combine system and user prompts for Gemini
   const prompt = `System: ${systemPrompt}\n\nUser: ${userPrompt}`;
   
-  const result = await model.generateContent(prompt);
-  const response = await result.response;
-  return response.text();
+  const config = {};
+  if (jsonMode) {
+    config.responseMimeType = "application/json";
+  }
+
+  const response = await ai.models.generateContent({
+    model: "gemini-3-flash-preview",
+    contents: prompt,
+    config,
+  });
+  return response.text;
 }

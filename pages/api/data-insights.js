@@ -28,13 +28,7 @@ export default async function handler(req, res) {
       ? session.data_profiles[0]
       : session.data_profiles;
 
-    const genAI = getGeminiClient();
-    const model = genAI.getGenerativeModel({ 
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-      }
-    });
+    const ai = getGeminiClient();
 
     // Generate data insights
     const dataContext = {
@@ -66,9 +60,14 @@ Format your response as a JSON object with these keys:
 
 User: Analyze this dataset and provide comprehensive insights.`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const insights = JSON.parse(response.text());
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      },
+    });
+    const insights = JSON.parse(response.text);
 
     // Update session status
     await supabase

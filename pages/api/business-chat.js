@@ -27,8 +27,7 @@ export default async function handler(req, res) {
       .eq('session_id', sessionId)
       .single();
 
-    const genAI = getGeminiClient();
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const ai = getGeminiClient();
 
     const systemPrompt = `You are an AI data analyst assistant helping to understand the user's business objectives.
 
@@ -54,7 +53,8 @@ Be conversational, professional, and concise.`;
     }));
     const userMsg = messages[messages.length - 1].content;
 
-    const chat = model.startChat({
+    const chat = ai.chats.create({
+      model: "gemini-3-flash-preview",
       history: [
         { role: 'user', parts: [{ text: systemPrompt }] },
         { role: 'model', parts: [{ text: "Understood. I'm ready to help understand your business objectives." }] },
@@ -62,8 +62,8 @@ Be conversational, professional, and concise.`;
       ]
     });
 
-    const result = await chat.sendMessage(userMsg);
-    const assistantMessage = result.response.text();
+    const result = await chat.sendMessage({ message: userMsg });
+    const assistantMessage = result.text;
 
     // Check if conversation is complete
     const isComplete = assistantMessage
@@ -72,15 +72,16 @@ Be conversational, professional, and concise.`;
 
     if (isComplete) {
       // Generate business plan using JSON mode
-      const jsonModel = genAI.getGenerativeModel({ 
-        model: "gemini-1.5-flash",
-        generationConfig: { responseMimeType: "application/json" }
-      });
-
       const planPrompt = `${systemPrompt}\n\nConversation History:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}\n\nAssistant: ${assistantMessage}\n\nUser: Based on our conversation, create a structured analysis plan in JSON format with: objectives (array), keyMetrics (array), expectedInsights (array), and recommendedVisualizations (array).`;
 
-      const planResult = await jsonModel.generateContent(planPrompt);
-      const businessPlan = JSON.parse(planResult.response.text());
+      const planResult = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: planPrompt,
+        config: {
+          responseMimeType: "application/json",
+        },
+      });
+      const businessPlan = JSON.parse(planResult.text);
 
       // Store in database
       await supabase
