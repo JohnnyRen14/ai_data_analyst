@@ -36,13 +36,12 @@ Context:
 
 Your goal is to ask insightful questions to understand:
 1. What business problem they're trying to solve
-2. What specific insights they're looking for
-3. What decisions this analysis will inform
-4. Any specific metrics or KPIs they care about
+2. Any specific insights they're looking for
+3. Any specific metrics or KPIs they care about
 
-Ask 2-3 follow-up questions maximum. Once you have enough information, summarize the business objectives and say "I have all the information I need to proceed with the analysis."
+Ask 1-2 follow-up questions maximum. Once you have enough information, summarise user answers and response together with "I have all the information, do you want me to proceed with the analysis? If user response is yes, then proceed with the analysis. If no, then ask again the questions and try to understand better."
 
-Be conversational, professional, and concise.`;
+Be conversational, professional, and concise. Use clear Markdown formatting (e.g., bullet points for questions, bold text for emphasis, line breaks between questions) to make your response easy to read.`;
 
     // Convert messages to Gemini format (role: user/model)
     const history = messages.slice(0, -1).map(m => ({
@@ -60,11 +59,18 @@ Be conversational, professional, and concise.`;
     });
 
     const assistantMessage = await chat.sendMessage(userMsg);
+    
+    // Log raw response for tracking
+    console.log('AI Response:', JSON.stringify(assistantMessage));
 
     // Check if conversation is complete
+    // The prompt now asks "do you want me to proceed with the analysis?"
+    // and expects a "yes" from the user. However, for the AI to trigger the plan generation,
+    // we still need a string to look for.
     const isComplete = assistantMessage
       .toLowerCase()
-      .includes('i have all the information i need');
+      .includes('i have all the information') && 
+      (userMsg.toLowerCase().includes('yes') || assistantMessage.toLowerCase().includes('proceed with the analysis'));
 
     if (isComplete) {
       // Generate business plan using JSON mode

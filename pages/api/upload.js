@@ -118,6 +118,21 @@ export default async function handler(req, res) {
       [tableName, analysis]
     );
 
+    // --- STEP 3: Store Data Profile in Supabase (for context) ---
+    const columnsProfile = columns.map(c => ({
+      name: c,
+      type: columnTypes.get(c)
+    }));
+
+    await supabase
+      .from('data_profiles')
+      .insert([{
+        session_id: session.id,
+        columns: columnsProfile,
+        row_count: records.length,
+        data_types: Object.fromEntries(columnTypes)
+      }]);
+
     // Clean up local file
     fs.unlinkSync(file.filepath);
 

@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 export default function ChatInterface({ sessionId, onComplete }) {
   const [messages, setMessages] = useState([
@@ -99,7 +101,19 @@ export default function ChatInterface({ sessionId, onComplete }) {
                   : 'glass text-gray-200'
               }`}
             >
-              <p className="whitespace-pre-wrap">{msg.content}</p>
+              {msg.role === 'user' ? (
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+              ) : (
+                <div className="prose prose-invert max-w-none prose-sm whitespace-pre-wrap
+                  prose-p:leading-tight prose-p:my-0
+                  prose-li:my-0 prose-ul:my-0 prose-ol:my-0
+                  prose-headings:text-white prose-headings:font-bold prose-headings:mt-1 prose-headings:mb-0
+                  prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {msg.role === 'assistant' ? msg.content.replace(/\n\n+/g, '\n') : msg.content}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
           </div>
         ))}
