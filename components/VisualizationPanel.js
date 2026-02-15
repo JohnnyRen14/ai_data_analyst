@@ -1,22 +1,29 @@
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  ScatterChart,
-  Scatter,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
+import { LineChart } from '@mui/x-charts/LineChart';
+import { BarChart } from '@mui/x-charts/BarChart';
+import { ScatterChart } from '@mui/x-charts/ScatterChart';
+import { PieChart } from '@mui/x-charts/PieChart';
 
 const COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#10b981', '#f59e0b', '#ef4444'];
+
+const chartSx = {
+  // Axis labels
+  '& .MuiChartsAxis-tickLabel': {
+    fill: '#9ca3af !important',
+    fontSize: '0.75rem',
+  },
+  // Axis lines
+  '& .MuiChartsAxis-line': {
+    stroke: 'rgba(255,255,255,0.1) !important',
+  },
+  // Grid lines
+  '& .MuiChartsGrid-line': {
+    stroke: 'rgba(255,255,255,0.06) !important',
+  },
+  // Tick marks
+  '& .MuiChartsAxis-tick': {
+    stroke: 'rgba(255,255,255,0.1) !important',
+  },
+};
 
 export default function VisualizationPanel({ visualizations }) {
   if (!visualizations || visualizations.length === 0) {
@@ -30,6 +37,87 @@ export default function VisualizationPanel({ visualizations }) {
   const renderChart = (viz, index) => {
     const { type, data, xKey, yKey, title, description } = viz;
 
+    // Guard: need data to render
+    if (!data || data.length === 0) {
+      return (
+        <div key={index} className="glass-strong p-6 rounded-2xl animate-fade-in">
+          <h4 className="text-lg font-bold mb-1">{title}</h4>
+          <p className="text-sm text-gray-400">No data available for this chart</p>
+        </div>
+      );
+    }
+
+    // Extract axis data and series data from the recharts-style array
+    const xLabels = data.map((d) => d[xKey] ?? '');
+    const yValues = data.map((d) => Number(d[yKey]) || 0);
+
+    let chart = null;
+
+    if (type === 'line') {
+      chart = (
+        <LineChart
+          xAxis={[{ data: xLabels, scaleType: 'point' }]}
+          series={[{ data: yValues, label: yKey, color: '#6366f1' }]}
+          height={300}
+          grid={{ horizontal: true }}
+          sx={chartSx}
+          skipAnimation
+        />
+      );
+    } else if (type === 'bar') {
+      chart = (
+        <BarChart
+          xAxis={[{ data: xLabels, scaleType: 'band' }]}
+          series={[{ data: yValues, label: yKey, color: '#8b5cf6' }]}
+          height={300}
+          grid={{ horizontal: true }}
+          sx={chartSx}
+          skipAnimation
+        />
+      );
+    } else if (type === 'scatter') {
+      const scatterData = data.map((d) => ({
+        x: Number(d[xKey]) || 0,
+        y: Number(d[yKey]) || 0,
+        id: d[xKey],
+      }));
+      chart = (
+        <ScatterChart
+          series={[{ data: scatterData, label: `${xKey} vs ${yKey}`, color: '#ec4899' }]}
+          height={300}
+          sx={chartSx}
+          skipAnimation
+        />
+      );
+    } else if (type === 'pie') {
+      const pieData = data.map((d, i) => ({
+        id: i,
+        value: Number(d[yKey]) || 0,
+        label: String(d[xKey] ?? `Item ${i + 1}`),
+        color: COLORS[i % COLORS.length],
+      }));
+      chart = (
+        <PieChart
+          series={[{ data: pieData, innerRadius: 30, outerRadius: 100, paddingAngle: 2 }]}
+          height={300}
+          sx={chartSx}
+          skipAnimation
+        />
+      );
+    } else {
+      // Fallback: default to bar chart
+      chart = (
+        <BarChart
+          xAxis={[{ data: xLabels, scaleType: 'band' }]}
+          series={[{ data: yValues, label: yKey, color: '#8b5cf6' }]}
+          height={300}
+          grid={{ horizontal: true }}
+          sx={chartSx}
+          skipAnimation
+        />
+      );
+    }
+
     return (
       <div key={index} className="glass-strong p-6 rounded-2xl animate-fade-in">
         <div className="mb-4">
@@ -38,92 +126,7 @@ export default function VisualizationPanel({ visualizations }) {
             <p className="text-sm text-gray-400">{description}</p>
           )}
         </div>
-
-        <ResponsiveContainer width="100%" height={300}>
-          {type === 'line' && (
-            <LineChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey={xKey} stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(17, 17, 27, 0.9)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                }}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey={yKey}
-                stroke="#6366f1"
-                strokeWidth={2}
-                dot={{ fill: '#6366f1' }}
-              />
-            </LineChart>
-          )}
-
-          {type === 'bar' && (
-            <BarChart data={data}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey={xKey} stroke="#9ca3af" />
-              <YAxis stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(17, 17, 27, 0.9)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                }}
-              />
-              <Legend />
-              <Bar dataKey={yKey} fill="#8b5cf6" />
-            </BarChart>
-          )}
-
-          {type === 'scatter' && (
-            <ScatterChart>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-              <XAxis dataKey={xKey} stroke="#9ca3af" />
-              <YAxis dataKey={yKey} stroke="#9ca3af" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(17, 17, 27, 0.9)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                }}
-              />
-              <Scatter data={data} fill="#ec4899" />
-            </ScatterChart>
-          )}
-
-          {type === 'pie' && (
-            <PieChart>
-              <Pie
-                data={data}
-                dataKey={yKey}
-                nameKey={xKey}
-                cx="50%"
-                cy="50%"
-                outerRadius={100}
-                label
-              >
-                {data.map((entry, index) => (
-                  <Cell
-                    key={`cell-${index}`}
-                    fill={COLORS[index % COLORS.length]}
-                  />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'rgba(17, 17, 27, 0.9)',
-                  border: '1px solid rgba(255,255,255,0.1)',
-                  borderRadius: '8px',
-                }}
-              />
-            </PieChart>
-          )}
-        </ResponsiveContainer>
+        {chart}
       </div>
     );
   };

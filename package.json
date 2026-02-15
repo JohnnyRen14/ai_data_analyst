@@ -9,7 +9,11 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@google/genai": "^1.41.0",
+    "@mui/material": "^7.3.8",
+    "@mui/x-charts": "^8.27.0",
     "@supabase/supabase-js": "^2.93.3",
     "csv-parse": "^6.1.0",
     "formidable": "^3.5.4",
