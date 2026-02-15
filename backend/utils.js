@@ -12,7 +12,11 @@ export function guessSqlType(value) {
   if (value === null || value === undefined) return 'TEXT';
   if (typeof value === 'string' && isValidDate(value)) return 'TIMESTAMP';
   if (!isNaN(value) && value.toString().includes('.')) return 'NUMERIC';
-  if (!isNaN(value)) return 'INTEGER';
+  if (!isNaN(value)) {
+    const num = Number(value);
+    if (num > 2147483647 || num < -2147483648) return 'BIGINT';
+    return 'INTEGER';
+  }
   return 'TEXT';
 }
 
