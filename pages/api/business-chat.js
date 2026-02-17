@@ -73,10 +73,36 @@ Be conversational, professional, and concise. Use clear Markdown formatting (e.g
       (userMsg.toLowerCase().includes('yes') || assistantMessage.toLowerCase().includes('proceed with the analysis'));
 
     if (isComplete) {
+      // Extract actual questions from user messages
+      const userQuestions = messages
+        .filter(m => m.role === 'user')
+        .map(m => m.content)
+        .filter(msg => msg.trim().length > 0 && !msg.toLowerCase().includes('yes') && !msg.toLowerCase().includes('no'));
+
       // Generate business plan using JSON mode
-      const planPrompt = `${systemPrompt}\n\nConversation History:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}\n\nAssistant: ${assistantMessage}\n\nUser: Based on our conversation, create a structured analysis plan in JSON format with: objectives (array), keyMetrics (array), expectedInsights (array), and recommendedVisualizations (array).`;
+      const planPrompt = `${systemPrompt}\n\nConversation History:\n${messages.map(m => `${m.role}: ${m.content}`).join('\n')}\n\nAssistant: ${assistantMessage}\n\nUser: Based on our conversation, create a structured analysis plan in JSON format with:
+- objectives: Array of specific questions/objectives the user wants answered (extract actual questions like "What stock is in low stock?", "Which products need restocking?", etc.)
+- keyMetrics: Array of key metrics they care about
+- expectedInsights: Array of insights they expect to find
+- recommendedVisualizations: Array of visualization recommendations
+
+IMPORTANT: The objectives array should contain the ACTUAL QUESTIONS the user asked, such as:
+- "What stock is in low stock?"
+- "Which products need restocking?"
+- "What are the top selling products?"
+- etc.
+
+Extract these from the conversation history above.`;
 
       const businessPlan = await generateJSON(planPrompt);
+      
+      // Ensure objectives include the actual user questions
+      if (!businessPlan.objectives || businessPlan.objectives.length === 0) {
+        businessPlan.objectives = userQuestions.length > 0 ? userQuestions : ['Analyze the dataset'];
+      } else {
+        // Merge user questions with extracted objectives
+        businessPlan.objectives = [...new Set([...userQuestions, ...businessPlan.objectives])];
+      }
 
       // Store in database
       await supabase

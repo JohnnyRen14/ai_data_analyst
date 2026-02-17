@@ -14,6 +14,7 @@ export default function AnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [etlData, setEtlData] = useState(null);
   const [dataInsights, setDataInsights] = useState(null);
+  const [businessAnswers, setBusinessAnswers] = useState([]);
   const [visualizations, setVisualizations] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
@@ -68,6 +69,13 @@ export default function AnalysisPage() {
       
       const data = await response.json();
       setDataInsights(data.insights);
+      
+      // Set business answers if available
+      if (data.businessAnswers && data.businessAnswers.length > 0) {
+        setBusinessAnswers(data.businessAnswers);
+      } else if (data.insights.businessAnswers && data.insights.businessAnswers.length > 0) {
+        setBusinessAnswers(data.insights.businessAnswers);
+      }
       
       // Generate visualizations
       if (data.insights.visualizations) {
@@ -199,6 +207,90 @@ export default function AnalysisPage() {
         {currentStep >= 4 && dataInsights && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">🔍 Data Insights</h2>
+            
+            {/* Business Question Answers - Display prominently */}
+            {businessAnswers.length > 0 && (
+              <div className="mb-8 glass-strong p-6 rounded-2xl border-l-4 border-primary">
+                <h3 className="text-xl font-bold mb-4 text-gradient-primary">
+                  💬 Answers to Your Business Questions
+                </h3>
+                <div className="space-y-6">
+                  {businessAnswers.map((answer, idx) => (
+                    <div key={idx} className="glass p-5 rounded-xl">
+                      <div className="flex items-start gap-3 mb-3">
+                        <span className="text-2xl">❓</span>
+                        <div className="flex-1">
+                          <h4 className="text-lg font-semibold text-white mb-1">
+                            {answer.question}
+                          </h4>
+                          {answer.answer && (
+                            <p className="text-gray-400 text-sm mb-3">{answer.answer}</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {answer.error ? (
+                        <div className="mt-3 p-3 bg-red-500/10 border border-red-500/50 rounded-lg">
+                          <p className="text-red-400 text-sm">
+                            ⚠️ Error: {answer.error}
+                          </p>
+                        </div>
+                      ) : answer.data && answer.data.length > 0 ? (
+                        <div className="mt-3">
+                          <div className="mb-2 text-sm text-gray-400">
+                            Found {answer.rowCount || answer.data.length} result(s):
+                          </div>
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                              <thead>
+                                <tr className="bg-white/5">
+                                  {Object.keys(answer.data[0]).map((key) => (
+                                    <th
+                                      key={key}
+                                      className="px-3 py-2 text-left text-xs font-semibold text-gray-400 uppercase"
+                                    >
+                                      {key}
+                                    </th>
+                                  ))}
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {answer.data.slice(0, 10).map((row, rowIdx) => (
+                                  <tr
+                                    key={rowIdx}
+                                    className="border-t border-white/5 hover:bg-white/5"
+                                  >
+                                    {Object.keys(answer.data[0]).map((key) => (
+                                      <td key={key} className="px-3 py-2 text-gray-300">
+                                        {row[key] !== null && row[key] !== undefined
+                                          ? String(row[key])
+                                          : '-'}
+                                      </td>
+                                    ))}
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {answer.data.length > 10 && (
+                              <p className="mt-2 text-xs text-gray-500 text-center">
+                                Showing first 10 of {answer.data.length} results
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/50 rounded-lg">
+                          <p className="text-yellow-400 text-sm">
+                            ℹ️ No results found for this query
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
             <div className="grid md:grid-cols-2 gap-6 mb-6">
               <div className="glass-strong p-6 rounded-2xl">
                 <h3 className="text-lg font-bold mb-3">Data Quality</h3>

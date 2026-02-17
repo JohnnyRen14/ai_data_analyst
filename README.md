@@ -50,7 +50,8 @@ A comprehensive AI-powered data analytics platform that transforms CSV data into
 
 - Node.js 18+ and npm
 - Supabase account ([sign up here](https://supabase.com))
-- OpenAI API key ([get one here](https://platform.openai.com))
+- Google Gemini API key ([get one here](https://aistudio.google.com/app/apikey))
+- PostgreSQL database (can use Supabase PostgreSQL)
 
 ### Installation
 
@@ -78,7 +79,13 @@ A comprehensive AI-powered data analytics platform that transforms CSV data into
    ```bash
    NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   OPENAI_API_KEY=sk-your-openai-key
+   GEMINI_API_KEY=your-gemini-api-key
+   GEMINI_MODEL=gemini-3-flash-preview
+   DB_USER=your-db-user
+   DB_HOST=your-db-host
+   DB_NAME=your-db-name
+   DB_PASSWORD=your-db-password
+   DB_PORT=5432
    ```
 
 5. **Run the development server**
@@ -164,18 +171,19 @@ ai_data_analyst/
 
 - **Frontend**: Next.js 16, React 19, TailwindCSS 4
 - **Backend**: Next.js API Routes
-- **Database**: Supabase (PostgreSQL)
+- **Database**: Supabase (PostgreSQL) + Direct PostgreSQL connection
 - **Storage**: Supabase Storage
-- **AI**: OpenAI GPT-4
-- **Charts**: Recharts
+- **AI**: Google Gemini (configurable model via `GEMINI_MODEL` env var)
+- **Charts**: MUI X Charts
 - **Data Processing**: CSV-Parse, Simple-Statistics
 
 ## 🔐 Security Notes
 
-- OpenAI API key is server-side only (never exposed to client)
+- Gemini API key is server-side only (never exposed to client)
 - Supabase Row Level Security can be enabled for multi-user auth
 - File uploads are validated for CSV format
 - All API routes include error handling
+- SQL queries are validated (SELECT-only) before execution
 
 ## 🎨 Design System
 
@@ -189,11 +197,17 @@ The platform features a premium dark theme with:
 
 ## 📝 Environment Variables
 
-| Variable                        | Description                  | Required |
-| ------------------------------- | ---------------------------- | -------- |
-| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL    | Yes      |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key       | Yes      |
-| `OPENAI_API_KEY`                | OpenAI API key (server-side) | Yes      |
+| Variable                        | Description                  | Required | Default                    |
+| ------------------------------- | ---------------------------- | -------- | -------------------------- |
+| `NEXT_PUBLIC_SUPABASE_URL`      | Your Supabase project URL    | Yes      | -                          |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key       | Yes      | -                          |
+| `GEMINI_API_KEY`                | Google Gemini API key        | Yes      | -                          |
+| `GEMINI_MODEL`                  | Gemini model name            | No       | `gemini-3-flash-preview`   |
+| `DB_USER`                       | PostgreSQL database user     | Yes      | -                          |
+| `DB_HOST`                       | PostgreSQL database host     | Yes      | -                          |
+| `DB_NAME`                       | PostgreSQL database name     | Yes      | -                          |
+| `DB_PASSWORD`                   | PostgreSQL database password | Yes      | -                          |
+| `DB_PORT`                       | PostgreSQL database port     | No       | `5432`                     |
 
 ## 🐛 Troubleshooting
 
@@ -208,11 +222,12 @@ The platform features a premium dark theme with:
 - Check that database tables are created (see SUPABASE_SETUP.md)
 - Ensure storage bucket `csv-files` exists
 
-### OpenAI API Errors
+### Gemini API Errors
 
 - Verify your API key is valid
 - Check you have available credits
 - Ensure API key is in `.env` without quotes
+- Verify the model name in `GEMINI_MODEL` is correct (default: `gemini-3-flash-preview`)
 
 ## 📄 License
 

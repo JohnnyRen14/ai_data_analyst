@@ -41,10 +41,107 @@ export default async function handler(req, res) {
       dataTypes: profile.data_types,
     };
 
+    // Extract business objectives/questions
+    const businessObjectives = session.business_objectives || {};
+    const objectives = businessObjectives.objectives || [];
+    const keyMetrics = businessObjectives.keyMetrics || [];
+    const expectedInsights = businessObjectives.expectedInsights || [];
+
+    // Combine all business context into questions
+    const allBusinessQuestions = [
+      ...objectives,
+      ...keyMetrics.map(m => `What are the ${m}?`),
+      ...expectedInsights.map(i => `What insights can we get about ${i}?`)
+    ].filter(Boolean);
+
+    // Generate SQL queries to answer specific business questions
+    let businessAnswers = [];
+    if (allBusinessQuestions.length > 0) {
+      const businessQuestionsPrompt = `System: You are an expert data analyst. Based on the business objectives and questions, generate SQL queries to answer them.
+
+Dataset Information:
+- Table Name: "${tableName}"
+- Columns: ${JSON.stringify(profile.columns.map(c => ({ name: c.name, type: c.type })))}
+- Row Count: ${profile.row_count}
+- Statistics: ${JSON.stringify(profile.statistics, null, 2)}
+
+Business Questions/Objectives:
+${allBusinessQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n')}
+
+For each business question/objective, generate a SQL query that will answer it directly. Examples:
+- "What stock is in low stock?" or "low stock" → SELECT products WHERE stock < threshold (identify stock column, use reasonable threshold like < 10 or < 20)
+- "What are the top selling products?" → SELECT products ORDER BY sales DESC LIMIT 10
+- "Which products need restocking?" → SELECT products WHERE stock < reorder_level OR stock < 10
+- "What are the best performing products?" → SELECT products ORDER BY sales/revenue DESC
+- Questions about specific metrics → Query those columns with appropriate filters/ordering
+
+IMPORTANT RULES:
+1. Use proper PostgreSQL syntax with double quotes around table and column names: SELECT * FROM "${tableName}" WHERE "column_name" = value
+2. Column names must match exactly - check the columns list above (they may be normalized with underscores)
+3. Only use SELECT queries (no INSERT, UPDATE, DELETE)
+4. Include LIMIT 100 for safety
+5. For "low stock" questions:
+   - Look for columns named: stock, quantity, inventory, qty, stock_level, available_stock
+   - Use WHERE clause: WHERE "stock" < 10 OR WHERE "stock" < 20 (choose reasonable threshold)
+   - If there's an availability column, also filter: WHERE "availability" ILIKE '%low%' OR "availability" ILIKE '%out%'
+6. For ranking/top questions: Use ORDER BY ... DESC LIMIT 10
+7. For filtering questions: Use appropriate WHERE clauses
+8. If you're unsure about column names, use the most likely match from the columns list
+
+Format your response as a JSON object with this structure:
+{
+  "businessAnswers": [
+    {
+      "question": "The specific question being answered (from the list above)",
+      "sqlQuery": "SELECT ... FROM \"${tableName}\" WHERE ... ORDER BY ... LIMIT 100",
+      "answer": "A brief explanation of what this query answers and what the results mean"
+    }
+  ]
+}
+
+Generate queries for ALL questions that can be answered with SQL. If a question cannot be answered with SQL, skip it.
+
+User: Generate SQL queries to answer the business questions.`;
+
+      try {
+        const businessQueries = await generateJSON(businessQuestionsPrompt);
+        businessAnswers = businessQueries.businessAnswers || [];
+
+        // Execute each query and attach results
+        for (const answer of businessAnswers) {
+          if (answer.sqlQuery) {
+            try {
+              // Safety check: ensure query starts with SELECT
+              if (!answer.sqlQuery.trim().toLowerCase().startsWith('select')) {
+                console.warn('Skipping non-SELECT query:', answer.sqlQuery);
+                answer.error = 'Invalid query type (only SELECT allowed)';
+                answer.data = [];
+                continue;
+              }
+
+              // Execute query
+              const result = await query(answer.sqlQuery);
+              answer.data = result.rows;
+              answer.rowCount = result.rows.length;
+            } catch (err) {
+              console.error(`Failed to execute business query: ${answer.sqlQuery}`, err);
+              answer.error = err.message || 'Failed to execute query';
+              answer.data = [];
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to generate business answers:', err);
+        businessAnswers = [];
+      }
+    }
+
     const prompt = `System: You are an expert data analyst. Analyze the following dataset and provide deep insights.
     
     Dataset Information:
     ${JSON.stringify(dataContext, null, 2)}
+    
+    ${businessObjectives.objectives ? `Business Context: The user wants to understand: ${JSON.stringify(businessObjectives.objectives)}` : ''}
     
     Provide insights about:
     1. Data quality and completeness
@@ -70,6 +167,9 @@ export default async function handler(req, res) {
     User: Analyze this dataset and provide comprehensive insights.`;
 
     const insights = await generateJSON(prompt);
+    
+    // Add business answers to insights
+    insights.businessAnswers = businessAnswers;
 
     // Execute queries for visualizations
     if (insights.visualizations && Array.isArray(insights.visualizations)) {
@@ -103,6 +203,7 @@ export default async function handler(req, res) {
     res.status(200).json({
       success: true,
       insights,
+      businessAnswers: businessAnswers, // Also return separately for easier access
     });
   } catch (error) {
     console.error('Data insights error:', error);

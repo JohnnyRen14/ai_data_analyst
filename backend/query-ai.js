@@ -1,6 +1,12 @@
 import { getGeminiClient } from '../lib/geminiClient';
 import pLimit from 'p-limit';
 
+// ── Model Configuration ─────────────────────────────────────────────
+// Get model name from environment variable, default to gemini-3-flash-preview
+function getModelName() {
+  return process.env.GEMINI_MODEL || 'gemini-3-flash-preview';
+}
+
 // ── Concurrency & Queue ─────────────────────────────────────────────
 // All AI calls are queued through this limiter (max 3 concurrent)
 const aiQueue = pLimit(3);
@@ -89,7 +95,7 @@ export function generateContent(prompt, { jsonMode = false, systemInstruction } 
       }
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: getModelName(),
         contents: prompt,
         config,
       });
@@ -129,7 +135,7 @@ export function createChat({ history = [] } = {}) {
   const ai = getGeminiClient();
 
   const chat = ai.chats.create({
-    model: 'gemini-3-flash-preview',
+    model: getModelName(),
     history,
   });
 
