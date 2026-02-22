@@ -1,5 +1,5 @@
 import { getGeminiEmbeddingClient } from '../lib/geminiClient.js';
-import { supabase } from '../lib/supabaseClient.js';
+import { supabaseAdmin as supabase } from '../lib/supabaseClient.js';
 
 const EMBEDDING_MODEL = 'gemini-embedding-001';
 

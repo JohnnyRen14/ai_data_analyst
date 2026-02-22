@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabaseClient.js';
+import { supabaseAdmin as supabase } from '../lib/supabaseClient.js';
 
 /**
  * Creates a scoped logger for a single query pipeline execution.
