@@ -43,13 +43,16 @@ export default function ChatInterface({ sessionId, onComplete }) {
 
       const data = await response.json();
 
+      const replyContent = data.message ||
+        (data.error ? `Error: ${data.error}` : 'Sorry, I received an empty response.');
+
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: data.message },
+        { role: 'assistant', content: replyContent },
       ]);
 
       // Check if conversation is complete
-      if (data.complete) {
+      if (data.complete && data.message) {
         setConversationComplete(true);
         if (onComplete) {
           onComplete(data.businessPlan);
@@ -110,7 +113,7 @@ export default function ChatInterface({ sessionId, onComplete }) {
                   prose-headings:text-white prose-headings:font-bold prose-headings:mt-1 prose-headings:mb-0
                   prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.role === 'assistant' ? msg.content.replace(/\n\n+/g, '\n') : msg.content}
+                    {msg.role === 'assistant' ? (msg.content || '').replace(/\n\n+/g, '\n') : (msg.content || '')}
                   </ReactMarkdown>
                 </div>
               )}
