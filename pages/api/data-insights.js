@@ -1,5 +1,5 @@
 import { generateJSON, AIError } from '../../backend/query-ai';
-import { supabase } from '../../lib/supabaseClient';
+import { supabaseAdmin as supabase } from '../../lib/supabaseClient';
 import { query } from '../../backend/db';
 
 export default async function handler(req, res) {

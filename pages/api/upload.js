@@ -2,7 +2,7 @@ import formidable from 'formidable';
 import { parse } from 'csv-parse/sync';
 import fs from 'fs';
 import path from 'path';
-import { supabase } from '../../lib/supabaseClient';
+import { supabaseAdmin as supabase } from '../../lib/supabaseClient';
 import { query, initializeTables } from '../../backend/db.js';
 import { analyzeTable } from '../../backend/table-analyzer.js';
 import { normalizeColumnName, guessSqlType } from '../../backend/utils.js';
