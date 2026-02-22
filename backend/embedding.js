@@ -1,11 +1,11 @@
 import { getGeminiEmbeddingClient } from '../lib/geminiClient.js';
 import { supabase } from '../lib/supabaseClient.js';
 
-const EMBEDDING_MODEL = 'text-embedding-004';
+const EMBEDDING_MODEL = 'gemini-embedding-001';
 
 /**
  * Generate a 768-dim embedding vector for a text string
- * using Gemini text-embedding-004.
+ * using Gemini gemini-embedding-001 (truncated to 768 dims to match DB schema).
  *
  * @param {string} text - The text to embed
  * @returns {Promise<number[]>} 768-dimensional float array
@@ -16,9 +16,11 @@ export async function generateEmbedding(text) {
   const response = await ai.models.embedContent({
     model: EMBEDDING_MODEL,
     contents: text,
+    config: { outputDimensionality: 768 },
   });
 
-  return response.embedding.values;
+  // SDK v1.41 returns { embeddings: [{ values: [...] }] }
+  return response.embeddings[0].values;
 }
 
 /**
