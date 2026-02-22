@@ -1,4 +1,4 @@
-import { getGeminiClient } from '../lib/geminiClient.js';
+import { getGeminiEmbeddingClient } from '../lib/geminiClient.js';
 import { supabase } from '../lib/supabaseClient.js';
 
 const EMBEDDING_MODEL = 'text-embedding-004';
@@ -11,7 +11,7 @@ const EMBEDDING_MODEL = 'text-embedding-004';
  * @returns {Promise<number[]>} 768-dimensional float array
  */
 export async function generateEmbedding(text) {
-  const ai = getGeminiClient();
+  const ai = getGeminiEmbeddingClient();
 
   const response = await ai.models.embedContent({
     model: EMBEDDING_MODEL,
