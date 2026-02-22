@@ -44,7 +44,79 @@ CREATE INDEX idx_sessions_created_at ON sessions(created_at DESC);
 CREATE INDEX idx_data_profiles_session_id ON data_profiles(session_id);
 ```
 
-### 2. Create Storage Bucket
+### 2. Enable pgvector & Create Embedding Tables
+
+```sql
+-- Enable the pgvector extension (built-in on Supabase)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Schema embeddings table for vector similarity search
+CREATE TABLE schema_embeddings (
+  id BIGSERIAL PRIMARY KEY,
+  table_name TEXT NOT NULL,
+  column_name TEXT,
+  description TEXT NOT NULL,
+  embedding vector(768),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- HNSW index for fast cosine similarity search
+CREATE INDEX schema_embeddings_embedding_idx
+ON schema_embeddings
+USING hnsw (embedding vector_cosine_ops);
+
+-- Index for filtering by table_name (used during idempotent re-upload)
+CREATE INDEX schema_embeddings_table_name_idx
+ON schema_embeddings (table_name);
+
+-- Pipeline logs table for metrics and debugging
+CREATE TABLE pipeline_logs (
+  id BIGSERIAL PRIMARY KEY,
+  query_id TEXT NOT NULL,
+  step_name TEXT NOT NULL,
+  duration_ms INTEGER NOT NULL,
+  metadata JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Index for querying logs by query_id
+CREATE INDEX pipeline_logs_query_id_idx ON pipeline_logs (query_id);
+```
+
+### 3. Create Vector Search Function
+
+```sql
+-- RPC function for cosine similarity search on schema embeddings.
+-- Called from the app via supabase.rpc('match_schema_embeddings', { query_embedding, match_count })
+CREATE OR REPLACE FUNCTION match_schema_embeddings(
+  query_embedding vector(768),
+  match_count int DEFAULT 10
+)
+RETURNS TABLE (
+  id bigint,
+  table_name text,
+  column_name text,
+  description text,
+  similarity float
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    se.id,
+    se.table_name,
+    se.column_name,
+    se.description,
+    1 - (se.embedding <=> query_embedding) AS similarity
+  FROM schema_embeddings se
+  ORDER BY se.embedding <=> query_embedding
+  LIMIT match_count;
+END;
+$$;
+```
+
+### 4. Create Storage Bucket
 
 ```sql
 -- Insert a new storage bucket for CSV files
@@ -52,7 +124,7 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('csv-files', 'csv-files', false);
 ```
 
-### 3. Set Up Storage Policies
+### 5. Set Up Storage Policies
 
 ```sql
 -- Policy to allow uploads
@@ -90,9 +162,17 @@ To verify your setup:
 
 1. Check that the tables were created:
    - Go to Supabase Dashboard > Table Editor
-   - You should see `sessions` and `data_profiles` tables
+   - You should see `sessions`, `data_profiles`, `schema_embeddings`, and `pipeline_logs` tables
 
-2. Check that the storage bucket was created:
+2. Check that pgvector is enabled:
+   - Run `SELECT * FROM pg_extension WHERE extname = 'vector'` in SQL Editor
+   - Should return one row
+
+3. Check that the RPC function exists:
+   - Run `SELECT routine_name FROM information_schema.routines WHERE routine_name = 'match_schema_embeddings'`
+   - Should return one row
+
+4. Check that the storage bucket was created:
    - Go to Supabase Dashboard > Storage
    - You should see `csv-files` bucket
 

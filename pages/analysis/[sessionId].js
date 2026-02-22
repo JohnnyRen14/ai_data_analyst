@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../../components/Layout';
 import DataPreview from '../../components/DataPreview';
@@ -18,6 +18,12 @@ export default function AnalysisPage() {
   const [visualizations, setVisualizations] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
+
+  // Ad-hoc query state
+  const [queryInput, setQueryInput] = useState('');
+  const [queryLoading, setQueryLoading] = useState(false);
+  const [queryResults, setQueryResults] = useState([]);
+  const queryInputRef = useRef(null);
 
   useEffect(() => {
     if (sessionId) {
@@ -52,7 +58,6 @@ export default function AnalysisPage() {
 
   const handleBusinessComplete = async (businessPlan) => {
     setCurrentStep(4);
-    // Automatically proceed to data insights
     await generateDataInsights();
   };
 
@@ -70,14 +75,12 @@ export default function AnalysisPage() {
       const data = await response.json();
       setDataInsights(data.insights);
       
-      // Set business answers if available
       if (data.businessAnswers && data.businessAnswers.length > 0) {
         setBusinessAnswers(data.businessAnswers);
       } else if (data.insights.businessAnswers && data.insights.businessAnswers.length > 0) {
         setBusinessAnswers(data.insights.businessAnswers);
       }
       
-      // Generate visualizations
       if (data.insights.visualizations) {
         await generateVisualizations(data.insights.visualizations);
       }
@@ -92,8 +95,6 @@ export default function AnalysisPage() {
 
   const generateVisualizations = async (vizConfig) => {
     try {
-      // In a real implementation, fetch actual data for visualizations
-      // For now, we'll use the configuration from AI
       setVisualizations(vizConfig);
       setCurrentStep(6);
     } catch (err) {
@@ -119,6 +120,36 @@ export default function AnalysisPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // ── Ad-hoc query handler ───────────────────────────────────────
+  const handleQuerySubmit = async (e) => {
+    e.preventDefault();
+    if (!queryInput.trim() || queryLoading) return;
+
+    setQueryLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: queryInput.trim() }),
+      });
+
+      if (!response.ok) throw new Error('Query failed');
+
+      const data = await response.json();
+      setQueryResults((prev) => [
+        { question: queryInput.trim(), ...data, timestamp: new Date().toISOString() },
+        ...prev,
+      ]);
+      setQueryInput('');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setQueryLoading(false);
     }
   };
 
@@ -208,7 +239,7 @@ export default function AnalysisPage() {
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">🔍 Data Insights</h2>
             
-            {/* Business Question Answers - Display prominently */}
+            {/* Business Question Answers */}
             {businessAnswers.length > 0 && (
               <div className="mb-8 glass-strong p-6 rounded-2xl border-l-4 border-primary">
                 <h3 className="text-xl font-bold mb-4 text-gradient-primary">
@@ -357,33 +388,127 @@ export default function AnalysisPage() {
                 title="Descriptive Analysis"
                 type="descriptive"
                 insights={analysis.descriptive?.insights}
+                summary={analysis.descriptive?.summary}
               />
               <InsightsCard
                 title="Predictive Analysis"
                 type="predictive"
                 insights={analysis.predictive?.insights}
+                summary={analysis.predictive?.summary}
               />
               <InsightsCard
                 title="Prescriptive Analysis"
                 type="prescriptive"
                 insights={analysis.prescriptive?.insights}
+                summary={analysis.prescriptive?.summary}
               />
             </div>
-            
-            <div className="mt-8 glass-strong p-6 rounded-2xl text-center">
-              <h3 className="text-2xl font-bold mb-2 text-green-400">
-                ✓ Analysis Complete!
-              </h3>
-              <p className="text-gray-400 mb-4">
-                Your comprehensive data analysis is ready
-              </p>
-              <button
-                onClick={() => router.push('/')}
-                className="btn-primary"
-              >
-                Analyze Another File
-              </button>
+          </div>
+        )}
+
+        {/* Ad-hoc Query Section — available after data is loaded (step >= 2) */}
+        {currentStep >= 2 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold mb-4">💬 Ask Your Data</h2>
+            <div className="glass-strong p-6 rounded-2xl">
+              <form onSubmit={handleQuerySubmit} className="flex gap-3">
+                <input
+                  ref={queryInputRef}
+                  type="text"
+                  value={queryInput}
+                  onChange={(e) => setQueryInput(e.target.value)}
+                  placeholder="Ask a question about your data..."
+                  className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                  disabled={queryLoading}
+                />
+                <button
+                  type="submit"
+                  className="btn-primary px-6"
+                  disabled={queryLoading || !queryInput.trim()}
+                >
+                  {queryLoading ? (
+                    <span className="inline-block w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    'Ask'
+                  )}
+                </button>
+              </form>
+
+              {/* Query Results */}
+              {queryResults.length > 0 && (
+                <div className="mt-6 space-y-6">
+                  {queryResults.map((qr, idx) => (
+                    <div key={idx} className="glass p-5 rounded-xl">
+                      <div className="flex items-start gap-3 mb-4">
+                        <span className="text-xl">❓</span>
+                        <p className="text-white font-semibold">{qr.question}</p>
+                      </div>
+
+                      {/* Summary / Response */}
+                      {qr.response && (
+                        <div className="mb-4 p-4 glass rounded-lg">
+                          <p className="text-gray-200">{qr.response}</p>
+                        </div>
+                      )}
+
+                      {/* Insights + KPIs + Recommendations */}
+                      {(qr.insights?.length > 0 || (qr.kpis && Object.keys(qr.kpis).length > 0)) && (
+                        <InsightsCard
+                          title="Query Insights"
+                          type="query"
+                          summary={qr.response}
+                          insights={qr.insights}
+                          kpis={qr.kpis}
+                          recommendations={qr.recommendations}
+                        />
+                      )}
+
+                      {/* Visualization */}
+                      {qr.visualization && qr.visualization.length > 0 && (
+                        <div className="mt-4">
+                          <VisualizationPanel visualizations={qr.visualization} />
+                        </div>
+                      )}
+
+                      {/* Metrics (dev only) */}
+                      {qr._metrics && (
+                        <details className="mt-3">
+                          <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-400">
+                            Pipeline metrics ({qr._metrics.totalDurationMs}ms total)
+                          </summary>
+                          <div className="mt-2 text-xs text-gray-500 space-y-1">
+                            {qr._metrics.steps?.map((s, i) => (
+                              <div key={i} className="flex justify-between">
+                                <span>{s.step}</span>
+                                <span>{s.durationMs}ms</span>
+                              </div>
+                            ))}
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          </div>
+        )}
+
+        {/* Completion */}
+        {currentStep >= 7 && (
+          <div className="mb-8 glass-strong p-6 rounded-2xl text-center">
+            <h3 className="text-2xl font-bold mb-2 text-green-400">
+              ✓ Analysis Complete!
+            </h3>
+            <p className="text-gray-400 mb-4">
+              Your comprehensive data analysis is ready. Use the query box above to explore further.
+            </p>
+            <button
+              onClick={() => router.push('/')}
+              className="btn-primary"
+            >
+              Analyze Another File
+            </button>
           </div>
         )}
       </div>

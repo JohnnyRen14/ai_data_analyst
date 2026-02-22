@@ -25,6 +25,40 @@ const chartSx = {
   },
 };
 
+/**
+ * Normalize viz specs from either old format (xKey/yKey) or new agent format (x_axis/y_axis).
+ */
+function normalizeViz(viz) {
+  return {
+    type: normalizeChartType(viz.type),
+    title: viz.title || 'Chart',
+    description: viz.description || '',
+    xKey: viz.xKey || viz.x_axis,
+    yKey: viz.yKey || viz.y_axis,
+    data: viz.data || [],
+    series: viz.series || [],
+  };
+}
+
+/**
+ * Map agent chart type names to internal types.
+ */
+function normalizeChartType(type) {
+  const typeMap = {
+    bar_chart: 'bar',
+    line_chart: 'line',
+    scatter_plot: 'scatter',
+    pie_chart: 'pie',
+    histogram: 'bar',       // render histograms as bar charts
+    stacked_bar: 'bar',     // render stacked bars as bar charts
+    bar: 'bar',
+    line: 'line',
+    scatter: 'scatter',
+    pie: 'pie',
+  };
+  return typeMap[type] || 'bar';
+}
+
 export default function VisualizationPanel({ visualizations }) {
   if (!visualizations || visualizations.length === 0) {
     return (
@@ -34,7 +68,8 @@ export default function VisualizationPanel({ visualizations }) {
     );
   }
 
-  const renderChart = (viz, index) => {
+  const renderChart = (rawViz, index) => {
+    const viz = normalizeViz(rawViz);
     const { type, data, xKey, yKey, title, description } = viz;
 
     // Guard: need data to render
@@ -47,7 +82,7 @@ export default function VisualizationPanel({ visualizations }) {
       );
     }
 
-    // Extract axis data and series data from the recharts-style array
+    // Extract axis data and series data
     const xLabels = data.map((d) => d[xKey] ?? '');
     const yValues = data.map((d) => Number(d[yKey]) || 0);
 

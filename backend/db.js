@@ -18,6 +18,7 @@ export const initializeTables = async () => {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `);
+  // schema_embeddings and pipeline_logs live in Supabase (pgvector built-in)
 };
 
 export const query = (text, params) => pool.query(text, params);

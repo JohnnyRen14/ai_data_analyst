@@ -228,6 +228,11 @@ The platform features a premium dark theme with:
 - Check you have available credits
 - Ensure API key is in `.env` without quotes
 - Verify the model name in `GEMINI_MODEL` is correct (default: `gemini-3-flash-preview`)
+- **Free Tier Models**: If you're on the free tier, use `gemini-1.5-flash` or `gemini-3-flash-preview`. Models like `gemini-2.5-pro` require a paid plan and have no free tier quota.
+- **Quota Errors**: If you see "Quota exceeded" errors, check:
+  - Your model supports free tier (use flash models, not pro models)
+  - You haven't exceeded daily/minute rate limits
+  - Your API key has proper permissions
 
 ## 📄 License
 

@@ -1,4 +1,12 @@
-export default function InsightsCard({ title, type, insights, icon }) {
+export default function InsightsCard({
+  title,
+  type,
+  insights,
+  icon,
+  summary,
+  kpis,
+  recommendations,
+}) {
   const getTypeColor = (type) => {
     switch (type) {
       case 'descriptive':
@@ -7,6 +15,8 @@ export default function InsightsCard({ title, type, insights, icon }) {
         return 'from-purple-500 to-pink-500';
       case 'prescriptive':
         return 'from-green-500 to-emerald-500';
+      case 'query':
+        return 'from-indigo-500 to-violet-500';
       default:
         return 'from-gray-500 to-slate-500';
     }
@@ -20,6 +30,8 @@ export default function InsightsCard({ title, type, insights, icon }) {
         return '🔮';
       case 'prescriptive':
         return '💡';
+      case 'query':
+        return '🎯';
       default:
         return '📈';
     }
@@ -35,12 +47,34 @@ export default function InsightsCard({ title, type, insights, icon }) {
           <span className="text-3xl">{icon || getTypeIcon(type)}</span>
           <h3 className="text-xl font-bold">{title}</h3>
         </div>
-        <p className="text-white/80 text-sm capitalize">{type} Analysis</p>
+        {summary ? (
+          <p className="text-white/90 text-sm">{summary}</p>
+        ) : (
+          <p className="text-white/80 text-sm capitalize">{type} Analysis</p>
+        )}
       </div>
 
       {/* Content */}
-      <div className="p-6">
-        {insights && insights.length > 0 ? (
+      <div className="p-6 space-y-4">
+        {/* KPI Highlights */}
+        {kpis && Object.keys(kpis).length > 0 && (
+          <div className="grid grid-cols-2 gap-3">
+            {Object.entries(kpis).map(([key, value], idx) => (
+              <div
+                key={idx}
+                className="glass p-3 rounded-lg text-center"
+              >
+                <div className="text-xs text-gray-400 uppercase tracking-wide mb-1">
+                  {key}
+                </div>
+                <div className="text-lg font-bold text-white">{value}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Bullet-point insights */}
+        {insights && insights.length > 0 && (
           <ul className="space-y-3">
             {insights.map((insight, idx) => (
               <li
@@ -52,11 +86,36 @@ export default function InsightsCard({ title, type, insights, icon }) {
               </li>
             ))}
           </ul>
-        ) : (
-          <p className="text-gray-400 text-center py-4">
-            No insights available yet
-          </p>
         )}
+
+        {/* Recommendations */}
+        {recommendations && recommendations.length > 0 && (
+          <div>
+            <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">
+              Recommendations
+            </h4>
+            <ul className="space-y-2">
+              {recommendations.map((rec, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-start gap-3 p-3 glass rounded-lg"
+                >
+                  <span className="text-green-400 mt-1">→</span>
+                  <span className="text-gray-200 flex-1">{rec}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Fallback */}
+        {(!insights || insights.length === 0) &&
+          (!kpis || Object.keys(kpis).length === 0) &&
+          (!recommendations || recommendations.length === 0) && (
+            <p className="text-gray-400 text-center py-4">
+              No insights available yet
+            </p>
+          )}
       </div>
     </div>
   );

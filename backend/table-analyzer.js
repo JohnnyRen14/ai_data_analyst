@@ -1,5 +1,6 @@
 import { query } from './db.js';
 import { queryAI, AIError } from './query-ai.js';
+import { storeSchemaEmbeddings } from './embedding.js';
 
 /**
  * Analyzes a table and generates a summary using AI.
@@ -61,6 +62,15 @@ export async function analyzeTable(tableName, sampleSize = 1000, maxDistinctValu
     }
 
     const llmSummary = await generateLLMSummary(dataDictionary);
+
+    // Generate and store embeddings for vector similarity search
+    try {
+      await storeSchemaEmbeddings(tableName, llmSummary);
+    } catch (embeddingError) {
+      console.error('Warning: Failed to store schema embeddings:', embeddingError.message);
+      // Non-fatal — schema analysis still succeeds without embeddings
+    }
+
     return llmSummary;
 
   } catch (error) {

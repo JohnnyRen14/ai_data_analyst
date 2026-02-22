@@ -31,10 +31,33 @@ export class AIError extends Error {
 
 // ── Retry Logic ─────────────────────────────────────────────────────
 function isRetryable(error) {
+  // Check for permanent quota errors (free tier model with limit 0) - don't retry
+  if (error?.message?.includes('quota') || error?.message?.includes('Quota exceeded')) {
+    const modelName = getModelName();
+    // If using a paid model (pro/2.5) and getting free_tier quota errors with limit 0, don't retry
+    if (error?.message?.includes('free_tier') && 
+        error?.message?.includes('limit: 0') && 
+        (modelName.includes('pro') || modelName.includes('2.5'))) {
+      console.error(
+        `[AI] Model ${modelName} doesn't have free tier access (quota limit: 0). ` +
+        `This is NOT a transient error - retrying won't help. ` +
+        `Please change GEMINI_MODEL in your .env to a free-tier model: ` +
+        `'gemini-1.5-flash' or 'gemini-3-flash-preview'`
+      );
+      return false; // Don't retry - user needs to change model
+    }
+    // Other quota errors (rate limits, temporary exhaustion) are retryable
+    return true;
+  }
+  
   if (error?.status && RETRYABLE_STATUSES.has(error.status)) return true;
   if (error?.message?.includes('UNAVAILABLE')) return true;
-  if (error?.message?.includes('RESOURCE_EXHAUSTED')) return true;
+  if (error?.message?.includes('RESOURCE_EXHAUSTED')) {
+    // Only retry if it's not a permanent quota issue (checked above)
+    return true;
+  }
   if (error?.message?.includes('rate limit')) return true;
+  
   return false;
 }
 
@@ -152,13 +175,16 @@ export function createChat({ history = [] } = {}) {
 }
 
 /**
- * Legacy-compatible queryAI function.
- * @param {string} systemPrompt
- * @param {string} userPrompt
- * @param {boolean} jsonMode
+ * Query AI with properly separated system and user prompts.
+ * Uses the native systemInstruction parameter for reliable instruction-following.
+ * @param {string} systemPrompt - System-level instruction
+ * @param {string} userPrompt - User message
+ * @param {boolean} jsonMode - Request JSON response
  * @returns {Promise<string>}
  */
 export async function queryAI(systemPrompt, userPrompt, jsonMode = false) {
-  const prompt = `System: ${systemPrompt}\n\nUser: ${userPrompt}`;
-  return generateContent(prompt, { jsonMode });
+  return generateContent(userPrompt, {
+    jsonMode,
+    systemInstruction: systemPrompt,
+  });
 }
