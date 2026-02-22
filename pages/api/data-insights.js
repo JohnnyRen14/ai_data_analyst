@@ -32,6 +32,30 @@ export default async function handler(req, res) {
     // Derive table name (same logic as upload.js)
     const tableName = session.file_name.replace('.csv', '').replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
 
+    // Fetch ACTUAL column names from the database (ground truth — prevents AI hallucination)
+    let actualColumns = [];
+    try {
+      const colResult = await query(
+        `SELECT column_name FROM information_schema.columns WHERE table_name = $1 ORDER BY ordinal_position`,
+        [tableName]
+      );
+      actualColumns = colResult.rows.map(r => r.column_name);
+    } catch (e) {
+      // Fall back to stored profile columns
+      actualColumns = (profile.columns || []).map(c => c.name);
+    }
+
+    // Validate a SQL string: returns true only if every quoted identifier used
+    // as a column reference actually exists in actualColumns.
+    // Skips table-name references and known SQL keywords.
+    const SKIP_WORDS = new Set([tableName, 'stage', 'count', 'avg', 'sum', 'min', 'max', 'total', 'value', 'label', 'name']);
+    function validateQueryColumns(sql) {
+      const quoted = [...sql.matchAll(/"([^"]+)"/g)].map(m => m[1]);
+      const columnRefs = quoted.filter(id => !SKIP_WORDS.has(id.toLowerCase()) && id !== tableName);
+      if (columnRefs.length === 0) return true;
+      return columnRefs.every(col => actualColumns.includes(col));
+    }
+
     // Generate data insights
     const dataContext = {
       tableName,
@@ -61,7 +85,8 @@ export default async function handler(req, res) {
 
 Dataset Information:
 - Table Name: "${tableName}"
-- Columns: ${JSON.stringify(profile.columns.map(c => ({ name: c.name, type: c.type })))}
+- EXACT Column Names (use ONLY these, do not invent others): ${JSON.stringify(actualColumns)}
+- Column Details: ${JSON.stringify(profile.columns.map(c => ({ name: c.name, type: c.type })))}
 - Row Count: ${profile.row_count}
 - Statistics: ${JSON.stringify(profile.statistics, null, 2)}
 
@@ -119,6 +144,14 @@ User: Generate SQL queries to answer the business questions.`;
                 continue;
               }
 
+              // Validate column names before executing
+              if (!validateQueryColumns(answer.sqlQuery)) {
+                console.warn('Skipping query with hallucinated columns:', answer.sqlQuery);
+                answer.error = 'Query references columns that do not exist in the table';
+                answer.data = [];
+                continue;
+              }
+
               // Execute query
               const result = await query(answer.sqlQuery);
               answer.data = result.rows;
@@ -140,6 +173,9 @@ User: Generate SQL queries to answer the business questions.`;
     
     Dataset Information:
     ${JSON.stringify(dataContext, null, 2)}
+    
+    EXACT Column Names in "${tableName}" (ONLY use these in SQL — do not invent column names):
+    ${JSON.stringify(actualColumns)}
     
     ${businessObjectives.objectives ? `Business Context: The user wants to understand: ${JSON.stringify(businessObjectives.objectives)}` : ''}
     
@@ -182,6 +218,14 @@ User: Generate SQL queries to answer the business questions.`;
               continue;
             }
             
+            // Validate column names before executing
+            if (!validateQueryColumns(viz.sqlQuery)) {
+              console.warn('Skipping viz query with hallucinated columns:', viz.sqlQuery);
+              viz.error = 'Query references columns that do not exist in the table';
+              viz.data = [];
+              continue;
+            }
+
             // Execute query
             const result = await query(viz.sqlQuery);
             viz.data = result.rows;
