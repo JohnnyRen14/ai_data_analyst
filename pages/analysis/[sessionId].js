@@ -406,8 +406,8 @@ export default function AnalysisPage() {
           </div>
         )}
 
-        {/* Ad-hoc Query Section — available after data is loaded (step >= 2) */}
-        {currentStep >= 2 && (
+        {/* Ad-hoc Query Section — available after Business Understanding is complete (step >= 4) */}
+        {currentStep >= 4 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">💬 Ask Your Data</h2>
             <div className="glass-strong p-6 rounded-2xl">
