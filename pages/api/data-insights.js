@@ -179,18 +179,25 @@ User: Generate SQL queries to answer the business questions.`;
     
     ${businessObjectives.objectives ? `Business Context: The user wants to understand: ${JSON.stringify(businessObjectives.objectives)}` : ''}
     
-    Provide insights about:
-    1. Data quality and completeness
-    2. Interesting patterns or correlations
-    3. Potential issues or anomalies
-    4. Recommended analyses based on the data structure
-    5. Suggested visualizations with SQL queries to fetch the data
+    Provide a full three-tier analytics report:
+    
+    1. DESCRIPTIVE ANALYTICS (What Happened?)
+       Analyze historical data to explain trends and patterns using aggregation, data mining, and reporting.
+       Examples: sales totals, top/bottom performers, volume distributions, missing/anomalous values.
+    
+    2. PREDICTIVE ANALYTICS (What Might Happen?)
+       Use statistical reasoning and pattern recognition on the data to forecast likely future outcomes.
+       Examples: projected trends, likely future peaks/drops, probable customer or product behavior, risk factors.
+    
+    3. PRESCRIPTIVE ANALYTICS (What Should We Do?)
+       Recommend specific, actionable steps to optimize outcomes based on the data and predictions.
+       Examples: inventory reorder points, pricing adjustments, campaign targeting, process improvements.
     
     Format your response as a JSON object with these keys:
-    - summary: Brief overview
-    - dataQuality: Array of quality observations
-    - patterns: Array of identified patterns
-    - recommendations: Array of analysis recommendations
+    - summary: Brief overview of the dataset
+    - descriptive: Array of EXACTLY 2 objects, each: { "title": string, "finding": string, "details": string }
+    - predictive: Array of EXACTLY 2 objects, each: { "title": string, "forecast": string, "confidence": "High" | "Medium" | "Low", "details": string }
+    - prescriptive: Array of EXACTLY 2 objects, each: { "title": string, "action": string, "expectedOutcome": string, "details": string }
     - visualizations: Array of {
         type: "line" | "bar" | "scatter" | "pie",
         title: string,
@@ -200,7 +207,7 @@ User: Generate SQL queries to answer the business questions.`;
         yKey: string (column name for y-axis)
       }
     
-    User: Analyze this dataset and provide comprehensive insights.`;
+    User: Analyze this dataset and provide the full three-tier analytics report.`;
 
     const insights = await generateJSON(prompt);
     
