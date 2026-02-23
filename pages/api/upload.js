@@ -7,6 +7,55 @@ import { query, initializeTables } from '../../backend/db.js';
 import { analyzeTable } from '../../backend/table-analyzer.js';
 import { normalizeColumnName, guessSqlType } from '../../backend/utils.js';
 
+// ── ETL helpers (previously in /api/etl.js) ──────────────────────────────────
+
+function inferType(records, columnName) {
+  const samples = records.slice(0, 100).map((r) => r[columnName]);
+  let numericCount = 0;
+  let dateCount = 0;
+  samples.forEach((value) => {
+    if (value === '' || value === null || value === undefined) return;
+    if (!isNaN(parseFloat(value)) && isFinite(value)) numericCount++;
+    if (!isNaN(Date.parse(value))) dateCount++;
+  });
+  const threshold = samples.length * 0.7;
+  if (numericCount > threshold) return 'number';
+  if (dateCount > threshold) return 'date';
+  return 'string';
+}
+
+function buildProfile(records) {
+  if (records.length === 0) return { columns: [], rowCount: 0, dataTypes: {}, statistics: {} };
+
+  const columns = Object.keys(records[0]).map((name) => ({
+    name,
+    type: inferType(records, name),
+  }));
+
+  // Deduplicate rows
+  const unique = Array.from(
+    new Map(records.map((item) => [JSON.stringify(item), item])).values()
+  );
+
+  const statistics = {};
+  const dataTypes = {};
+
+  columns.forEach((col) => {
+    dataTypes[col.name] = col.type;
+    if (col.type === 'number') {
+      const values = unique.map((r) => parseFloat(r[col.name])).filter((v) => !isNaN(v));
+      statistics[col.name] = values.length > 0
+        ? { min: Math.min(...values), max: Math.max(...values), mean: values.reduce((a, b) => a + b, 0) / values.length, count: values.length, nullCount: unique.length - values.length }
+        : { count: 0, nullCount: unique.length };
+    } else {
+      const values = unique.map((r) => r[col.name]).filter((v) => v !== null && v !== '' && v !== undefined);
+      statistics[col.name] = { unique: new Set(values).size, count: values.length, nullCount: unique.length - values.length };
+    }
+  });
+
+  return { columns, rowCount: unique.length, dataTypes, statistics, previewRows: unique.slice(0, 100) };
+}
+
 export const config = {
   api: {
     bodyParser: false,
@@ -119,6 +168,9 @@ export default async function handler(req, res) {
     );
 
     // --- STEP 3: Store Data Profile in Supabase (for context) ---
+    // Build rich ETL profile from the original records (original column names + stats)
+    const etlProfile = buildProfile(records);
+
     const columnsProfile = columns.map(c => ({
       name: c,
       type: columnTypes.get(c)
@@ -129,8 +181,10 @@ export default async function handler(req, res) {
       .insert([{
         session_id: session.id,
         columns: columnsProfile,
-        row_count: records.length,
-        data_types: Object.fromEntries(columnTypes)
+        row_count: etlProfile.rowCount,
+        data_types: etlProfile.dataTypes,
+        statistics: etlProfile.statistics,
+        preprocessing_applied: [],
       }]);
 
     // Clean up local file
@@ -140,8 +194,16 @@ export default async function handler(req, res) {
       success: true,
       sessionId: session.id,
       tableName,
-      rowCount: records.length,
-      analysis
+      rowCount: etlProfile.rowCount,
+      analysis,
+      // ETL data so the analysis page can skip a round-trip if needed
+      etl: {
+        data: etlProfile.previewRows,
+        columns: etlProfile.columns,
+        rowCount: etlProfile.rowCount,
+        statistics: etlProfile.statistics,
+        dataTypes: etlProfile.dataTypes,
+      },
     });
 
   } catch (error) {

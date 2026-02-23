@@ -1,4 +1,13 @@
+/**
+ * ETL endpoint  lightweight read-only.
+ *
+ * The actual ETL (parsing, type inference, statistics) now happens in /api/upload
+ * and is persisted to Supabase data_profiles. This endpoint simply reads that
+ * stored profile and fetches the first 100 rows from the Postgres table directly.
+ * No re-downloading from Storage, no re-parsing.
+ */
 import { supabaseAdmin as supabase } from '../../lib/supabaseClient';
+import { query } from '../../backend/db.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,54 +21,37 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Session ID required' });
     }
 
-    // Get file from storage
-    const { data: session } = await supabase
+    // Load session + stored profile in one query
+    const { data: session, error: sessionError } = await supabase
       .from('sessions')
-      .select('*')
+      .select('*, data_profiles(*)')
       .eq('id', sessionId)
       .single();
 
-    if (!session) {
+    if (sessionError || !session) {
       return res.status(404).json({ error: 'Session not found' });
     }
 
-    // Download file from storage
-    const fileName = `${sessionId}/${session.file_name}`;
-    const { data: fileData, error: downloadError } = await supabase.storage
-      .from('csv-files')
-      .download(fileName);
+    const profile = Array.isArray(session.data_profiles)
+      ? session.data_profiles[0]
+      : session.data_profiles;
 
-    if (downloadError) {
-      throw downloadError;
+    if (!profile) {
+      return res.status(404).json({ error: 'Data profile not found. Upload may still be processing.' });
     }
 
-    const fileContent = await fileData.text();
-    const { parse } = await import('csv-parse/sync');
-    const records = parse(fileContent, {
-      columns: true,
-      skip_empty_lines: true,
-      trim: true,
-    });
+    // Fetch preview rows directly from Postgres (already inserted by upload)
+    const tableName = session.file_name
+      .replace('.csv', '')
+      .replace(/[^a-zA-Z0-9]/g, '_')
+      .toLowerCase();
 
-    // Perform ETL operations
-    const cleaned = performETL(records);
-
-    // Store data profile
-    const { error: profileError } = await supabase
-      .from('data_profiles')
-      .insert([
-        {
-          session_id: sessionId,
-          columns: cleaned.columns,
-          row_count: cleaned.rowCount,
-          data_types: cleaned.dataTypes,
-          statistics: cleaned.statistics,
-          preprocessing_applied: [],
-        },
-      ]);
-
-    if (profileError) {
-      console.error('Profile creation error:', profileError);
+    let previewRows = [];
+    try {
+      const result = await query(`SELECT * FROM "${tableName}" LIMIT 100`);
+      previewRows = result.rows;
+    } catch (e) {
+      console.warn(`[ETL] Could not fetch preview rows for table "${tableName}":`, e.message);
     }
 
     // Update session status
@@ -70,119 +62,14 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       success: true,
-      data: cleaned.data.slice(0, 100), // Return first 100 rows
-      columns: cleaned.columns,
-      rowCount: cleaned.rowCount,
-      statistics: cleaned.statistics,
-      dataTypes: cleaned.dataTypes,
+      data: previewRows,
+      columns: profile.columns,
+      rowCount: profile.row_count,
+      statistics: profile.statistics,
+      dataTypes: profile.data_types,
     });
   } catch (error) {
     console.error('ETL error:', error);
     res.status(500).json({ error: 'ETL processing failed' });
   }
-}
-
-function performETL(records) {
-  if (records.length === 0) {
-    return {
-      data: [],
-      columns: [],
-      rowCount: 0,
-      dataTypes: {},
-      statistics: {},
-    };
-  }
-
-  const columns = Object.keys(records[0]).map((name) => ({
-    name,
-    type: inferType(records, name),
-  }));
-
-  // Remove duplicates
-  const uniqueRecords = Array.from(
-    new Map(records.map((item) => [JSON.stringify(item), item])).values()
-  );
-
-  // Handle missing values and type conversion
-  const cleanedRecords = uniqueRecords.map((record) => {
-    const cleanedRecord = {};
-    columns.forEach((col) => {
-      let value = record[col.name];
-
-      if (value === '' || value === null || value === undefined) {
-        cleanedRecord[col.name] = null;
-      } else if (col.type === 'number') {
-        cleanedRecord[col.name] = parseFloat(value) || null;
-      } else {
-        cleanedRecord[col.name] = value;
-      }
-    });
-    return cleanedRecord;
-  });
-
-  // Calculate statistics
-  const statistics = {};
-  const dataTypes = {};
-
-  columns.forEach((col) => {
-    dataTypes[col.name] = col.type;
-    
-    if (col.type === 'number') {
-      const values = cleanedRecords
-        .map((r) => r[col.name])
-        .filter((v) => v !== null);
-
-      if (values.length > 0) {
-        statistics[col.name] = {
-          min: Math.min(...values),
-          max: Math.max(...values),
-          mean: values.reduce((a, b) => a + b, 0) / values.length,
-          count: values.length,
-          nullCount: cleanedRecords.length - values.length,
-        };
-      }
-    } else {
-      const values = cleanedRecords
-        .map((r) => r[col.name])
-        .filter((v) => v !== null);
-      
-      statistics[col.name] = {
-        unique: new Set(values).size,
-        count: values.length,
-        nullCount: cleanedRecords.length - values.length,
-      };
-    }
-  });
-
-  return {
-    data: cleanedRecords,
-    columns,
-    rowCount: cleanedRecords.length,
-    dataTypes,
-    statistics,
-  };
-}
-
-function inferType(records, columnName) {
-  const samples = records.slice(0, 100).map((r) => r[columnName]);
-  let numericCount = 0;
-  let dateCount = 0;
-
-  samples.forEach((value) => {
-    if (value === '' || value === null || value === undefined) return;
-    
-    if (!isNaN(parseFloat(value)) && isFinite(value)) {
-      numericCount++;
-    }
-    
-    if (!isNaN(Date.parse(value))) {
-      dateCount++;
-    }
-  });
-
-  const threshold = samples.length * 0.7;
-
-  if (numericCount > threshold) return 'number';
-  if (dateCount > threshold) return 'date';
-  return 'string';
 }
