@@ -15,7 +15,9 @@ export default function Layout({ children }) {
   const router = useRouter();
 
   const getCurrentStep = () => {
-    const pathIndex = stages.findIndex(s => s.path === router.pathname);
+    // Handle dynamic routes like /analysis/[sessionId]
+    const pathname = router.pathname.startsWith('/analysis/') ? '/analysis' : router.pathname;
+    const pathIndex = stages.findIndex(s => s.path === pathname);
     return pathIndex >= 0 ? pathIndex + 1 : 1;
   };
 

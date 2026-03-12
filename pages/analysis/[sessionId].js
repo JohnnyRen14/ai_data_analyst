@@ -166,26 +166,6 @@ export default function AnalysisPage() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
-        {/* Progress Header */}
-        <div className="mb-8 glass-strong p-6 rounded-2xl">
-          <h1 className="text-3xl font-bold mb-4 text-gradient-primary">
-            Analysis Pipeline
-          </h1>
-          <div className="flex items-center gap-2">
-            {[1, 2, 3, 4, 5, 6].map((step) => (
-              <div
-                key={step}
-                className={`flex-1 h-2 rounded-full transition-all ${
-                  step <= currentStep ? 'gradient-primary' : 'bg-white/10'
-                }`}
-              />
-            ))}
-          </div>
-          <div className="mt-2 text-sm text-gray-400">
-            Step {currentStep} of 6
-          </div>
-        </div>
-
         {error && (
           <div className="mb-8 glass-strong p-4 rounded-xl border-l-4 border-red-500">
             <p className="text-red-400">{error}</p>
