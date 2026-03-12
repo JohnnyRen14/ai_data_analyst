@@ -6,6 +6,16 @@ import ChatInterface from '../../components/ChatInterface';
 import VisualizationPanel from '../../components/VisualizationPanel';
 import InsightsCard from '../../components/InsightsCard';
 
+const analysisStages = [
+  { name: 'Upload' },
+  { name: 'ETL & Preview' },
+  { name: 'Business Goals' },
+  { name: 'Generating Insights' },
+  { name: 'Data Insights' },
+  { name: 'Visualizations' },
+  { name: 'Analysis' },
+];
+
 export default function AnalysisPage() {
   const router = useRouter();
   const { sessionId } = router.query;
@@ -56,9 +66,13 @@ export default function AnalysisPage() {
     setCurrentStep(3);
   };
 
-  const handleBusinessComplete = async (businessPlan) => {
+  const handleBusinessComplete = async () => {
     setCurrentStep(4);
     await generateDataInsights();
+  };
+
+  const handleProceedToVisualizations = () => {
+    setCurrentStep(6);
   };
 
   const generateDataInsights = async () => {
@@ -71,34 +85,22 @@ export default function AnalysisPage() {
       });
 
       if (!response.ok) throw new Error('Insights generation failed');
-      
+
       const data = await response.json();
       setDataInsights(data.insights);
-      
+      setVisualizations(data.insights?.visualizations || []);
+
       if (data.businessAnswers && data.businessAnswers.length > 0) {
         setBusinessAnswers(data.businessAnswers);
       } else if (data.insights.businessAnswers && data.insights.businessAnswers.length > 0) {
         setBusinessAnswers(data.insights.businessAnswers);
       }
-      
-      if (data.insights.visualizations) {
-        await generateVisualizations(data.insights.visualizations);
-      }
-      
+
       setCurrentStep(5);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const generateVisualizations = async (vizConfig) => {
-    try {
-      setVisualizations(vizConfig);
-      setCurrentStep(6);
-    } catch (err) {
-      setError(err.message);
     }
   };
 
@@ -155,7 +157,7 @@ export default function AnalysisPage() {
 
   if (!sessionId) {
     return (
-      <Layout>
+      <Layout workflowStages={analysisStages} currentStepOverride={currentStep}>
         <div className="text-center">
           <p className="text-gray-400">Loading session...</p>
         </div>
@@ -164,7 +166,7 @@ export default function AnalysisPage() {
   }
 
   return (
-    <Layout>
+    <Layout workflowStages={analysisStages} currentStepOverride={currentStep}>
       <div className="max-w-7xl mx-auto">
         {error && (
           <div className="mb-8 glass-strong p-4 rounded-xl border-l-4 border-red-500">
@@ -214,11 +216,23 @@ export default function AnalysisPage() {
           </div>
         )}
 
-        {/* Visualizations — shown before analytics */}
-        {currentStep >= 5 && visualizations.length > 0 && (
+        {/* Visualizations */}
+        {currentStep >= 6 && visualizations.length > 0 && (
           <div className="mb-8">
             <h2 className="text-2xl font-bold mb-4">📈 Visualizations</h2>
             <VisualizationPanel visualizations={visualizations} />
+
+            {currentStep === 6 && (
+              <div className="mt-6 flex gap-4">
+                <button
+                  onClick={generateAnalysis}
+                  className="btn-primary"
+                  disabled={loading}
+                >
+                  Generate Final Analysis
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -360,6 +374,28 @@ export default function AnalysisPage() {
                 ))}
               </div>
             </div>
+
+            {currentStep === 5 && (
+              <div className="mt-6 flex gap-4">
+                {visualizations.length > 0 ? (
+                  <button
+                    onClick={handleProceedToVisualizations}
+                    className="btn-primary"
+                    disabled={loading}
+                  >
+                    Continue to Visualizations
+                  </button>
+                ) : (
+                  <button
+                    onClick={generateAnalysis}
+                    className="btn-primary"
+                    disabled={loading}
+                  >
+                    Generate Final Analysis
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
 

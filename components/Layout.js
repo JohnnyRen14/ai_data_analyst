@@ -1,29 +1,35 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
-const stages = [
-  { name: 'Upload',        path: '/' },
+const defaultStages = [
+  { name: 'Upload', path: '/' },
   { name: 'ETL & Preview', path: '/etl' },
   { name: 'Preprocessing', path: '/preprocessing' },
-  { name: 'Business Goals',path: '/business' },
+  { name: 'Business Goals', path: '/business' },
   { name: 'Data Insights', path: '/insights' },
-  { name: 'Visualizations',path: '/visualizations' },
-  { name: 'Analysis',      path: '/analysis' },
+  { name: 'Visualizations', path: '/visualizations' },
+  { name: 'Analysis', path: '/analysis' },
 ];
 
-export default function Layout({ children }) {
+export default function Layout({ children, workflowStages = defaultStages, currentStepOverride }) {
   const router = useRouter();
+  const stages = workflowStages?.length ? workflowStages : defaultStages;
 
-  const getCurrentStep = () => {
-    // Handle dynamic routes like /analysis/[sessionId]
-    const pathname = router.pathname.startsWith('/analysis/') ? '/analysis' : router.pathname;
-    const pathIndex = stages.findIndex(s => s.path === pathname);
+  const getRouteStep = () => {
+    const pathname = router.pathname === '/analysis/[sessionId]' ? '/analysis' : router.pathname;
+    const pathIndex = stages.findIndex((stage) => stage.path === pathname);
     return pathIndex >= 0 ? pathIndex + 1 : 1;
   };
 
+  const currentStep = Number.isFinite(currentStepOverride)
+    ? Math.min(Math.max(currentStepOverride, 1), stages.length)
+    : getRouteStep();
+
   const handleStepChange = (stepNum) => {
     const path = stages[stepNum - 1]?.path;
-    if (path) router.push(path);
+    if (path) {
+      router.push(path);
+    }
   };
 
   return (
@@ -52,7 +58,7 @@ export default function Layout({ children }) {
                 marginBottom: 4,
               }}>Workflow Progress</div>
               <h2 style={{ fontWeight: 600, fontSize: '1rem' }}>
-                {stages[getCurrentStep() - 1]?.name || 'AI Analytics'}
+                {stages[currentStep - 1]?.name || 'AI Analytics'}
               </h2>
             </div>
             <div style={{
@@ -60,7 +66,7 @@ export default function Layout({ children }) {
               color: 'var(--muted)',
               fontWeight: 500,
             }}>
-              Step {getCurrentStep()} of {stages.length}
+              Step {currentStep} of {stages.length}
             </div>
           </div>
 
@@ -74,53 +80,55 @@ export default function Layout({ children }) {
           }}>
             {stages.map((stage, idx) => {
               const stepNum = idx + 1;
-              const current = getCurrentStep();
-              const isActive = current === stepNum;
-              const isComplete = current > stepNum;
+              const isActive = currentStep === stepNum;
+              const isComplete = currentStep > stepNum;
+              const indicator = (
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    transition: 'all 0.2s ease',
+                    background: isActive || isComplete
+                      ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
+                      : 'rgba(255,255,255,0.08)',
+                    color: isActive || isComplete ? '#fff' : 'var(--muted)',
+                    border: isActive
+                      ? '2px solid var(--primary-light)'
+                      : '1px solid rgba(255,255,255,0.1)',
+                    cursor: stage.path ? 'pointer' : 'default',
+                  }}
+                  title={stage.name}
+                >
+                  {isComplete ? (
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M2 7l3 3 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  ) : (
+                    stepNum
+                  )}
+                </div>
+              );
 
               return (
                 <div key={stepNum} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <Link
-                    href={stage.path}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleStepChange(stepNum);
-                    }}
-                    style={{ textDecoration: 'none' }}
-                  >
-                    <div
-                      style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '0.75rem',
-                        fontWeight: 700,
-                        transition: 'all 0.2s ease',
-                        background: isActive
-                          ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
-                          : isComplete
-                            ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
-                            : 'rgba(255,255,255,0.08)',
-                        color: isActive || isComplete ? '#fff' : 'var(--muted)',
-                        border: isActive
-                          ? '2px solid var(--primary-light)'
-                          : '1px solid rgba(255,255,255,0.1)',
-                        cursor: 'pointer',
+                  {stage.path ? (
+                    <Link
+                      href={stage.path}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        handleStepChange(stepNum);
                       }}
-                      title={stage.name}
+                      style={{ textDecoration: 'none' }}
                     >
-                      {isComplete ? (
-                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M2 7l3 3 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      ) : (
-                        stepNum
-                      )}
-                    </div>
-                  </Link>
+                      {indicator}
+                    </Link>
+                  ) : indicator}
                   {idx < stages.length - 1 && (
                     <div
                       style={{
