@@ -1,78 +1,148 @@
-import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 
+const stages = [
+  { name: 'Upload',        path: '/' },
+  { name: 'ETL & Preview', path: '/etl' },
+  { name: 'Preprocessing', path: '/preprocessing' },
+  { name: 'Business Goals',path: '/business' },
+  { name: 'Data Insights', path: '/insights' },
+  { name: 'Visualizations',path: '/visualizations' },
+  { name: 'Analysis',      path: '/analysis' },
+];
+
 export default function Layout({ children }) {
   const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const stages = [
-    { id: 1, name: 'Upload', icon: '📁', path: '/' },
-    { id: 2, name: 'ETL & Preview', icon: '🔄', path: '/etl' },
-    { id: 3, name: 'Preprocessing', icon: '⚙️', path: '/preprocessing' },
-    { id: 4, name: 'Business Goals', icon: '💡', path: '/business' },
-    { id: 5, name: 'Data Insights', icon: '📊', path: '/insights' },
-    { id: 6, name: 'Visualizations', icon: '📈', path: '/visualizations' },
-    { id: 7, name: 'Analysis', icon: '🎯', path: '/analysis' },
-  ];
+  const getCurrentStep = () => {
+    const pathIndex = stages.findIndex(s => s.path === router.pathname);
+    return pathIndex >= 0 ? pathIndex + 1 : 1;
+  };
+
+  const handleStepChange = (stepNum) => {
+    const path = stages[stepNum - 1]?.path;
+    if (path) router.push(path);
+  };
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside
-        className={`${
-          sidebarOpen ? 'w-64' : 'w-20'
-        } glass-strong transition-all duration-300 p-4 flex flex-col fixed h-screen z-10`}
-      >
-        <div className="flex items-center justify-between mb-8">
-          <h1 className={`${sidebarOpen ? 'block' : 'hidden'} text-xl font-bold text-gradient-primary`}>
-            AI Analytics
-          </h1>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-white/10 rounded-lg transition"
-          >
-            {sidebarOpen ? '◀' : '▶'}
-          </button>
-        </div>
-
-        <nav className="flex-1 space-y-2">
-          {stages.map((stage) => {
-            const isActive = router.pathname === stage.path;
-            return (
-              <Link
-                key={stage.id}
-                href={stage.path}
-                className={`flex items-center gap-3 p-3 rounded-lg transition-all ${
-                  isActive
-                    ? 'gradient-primary text-white shadow-lg'
-                    : 'hover:bg-white/10 text-gray-300'
-                }`}
-              >
-                <span className="text-2xl">{stage.icon}</span>
-                {sidebarOpen && (
-                  <span className="font-medium">{stage.name}</span>
-                )}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {sidebarOpen && (
-          <div className="mt-auto p-4 glass rounded-lg">
-            <p className="text-xs text-gray-400 text-center">
-              By Lee Ren & Zhao Zheng
-            </p>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+      {/* Stepper Header */}
+      <div style={{
+        background: 'rgba(8, 8, 18, 0.7)',
+        backdropFilter: 'blur(16px)',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        padding: '20px 32px',
+      }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: 12,
+          }}>
+            <div>
+              <div style={{
+                fontWeight: 700,
+                fontSize: '0.75rem',
+                color: 'var(--muted)',
+                letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+                marginBottom: 4,
+              }}>Workflow Progress</div>
+              <h2 style={{ fontWeight: 600, fontSize: '1rem' }}>
+                {stages[getCurrentStep() - 1]?.name || 'AI Analytics'}
+              </h2>
+            </div>
+            <div style={{
+              fontSize: '0.8rem',
+              color: 'var(--muted)',
+              fontWeight: 500,
+            }}>
+              Step {getCurrentStep()} of {stages.length}
+            </div>
           </div>
-        )}
-      </aside>
 
-      {/* Main Content */}
-      <main
-        className={`flex-1 ${
-          sidebarOpen ? 'ml-64' : 'ml-20'
-        } transition-all duration-300 p-8`}
-      >
+          {/* Inline stepper indicator */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 4,
+            overflow: 'auto',
+            paddingBottom: 4,
+          }}>
+            {stages.map((stage, idx) => {
+              const stepNum = idx + 1;
+              const current = getCurrentStep();
+              const isActive = current === stepNum;
+              const isComplete = current > stepNum;
+
+              return (
+                <div key={stepNum} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <Link
+                    href={stage.path}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleStepChange(stepNum);
+                    }}
+                    style={{ textDecoration: 'none' }}
+                  >
+                    <div
+                      style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        transition: 'all 0.2s ease',
+                        background: isActive
+                          ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
+                          : isComplete
+                            ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
+                            : 'rgba(255,255,255,0.08)',
+                        color: isActive || isComplete ? '#fff' : 'var(--muted)',
+                        border: isActive
+                          ? '2px solid var(--primary-light)'
+                          : '1px solid rgba(255,255,255,0.1)',
+                        cursor: 'pointer',
+                      }}
+                      title={stage.name}
+                    >
+                      {isComplete ? (
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M2 7l3 3 6-6" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        stepNum
+                      )}
+                    </div>
+                  </Link>
+                  {idx < stages.length - 1 && (
+                    <div
+                      style={{
+                        width: 16,
+                        height: 1,
+                        background: isComplete ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                        transition: 'background 0.3s ease',
+                      }}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <main style={{
+        flex: 1,
+        overflow: 'auto',
+        background: 'var(--background)',
+        padding: '32px',
+      }}>
         {children}
       </main>
     </div>

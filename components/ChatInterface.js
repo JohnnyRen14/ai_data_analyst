@@ -79,41 +79,44 @@ export default function ChatInterface({ sessionId, onComplete }) {
   };
 
   return (
-    <div className="flex flex-col h-[600px] glass-strong rounded-2xl overflow-hidden animate-fade-in">
+    <div className="glass-strong animate-fade-in" style={{ display: 'flex', flexDirection: 'column', height: 580, borderRadius: 16, overflow: 'hidden' }}>
       {/* Header */}
-      <div className="p-6 border-b border-white/10 gradient-primary">
-        <h3 className="text-xl font-bold text-white">Business Understanding</h3>
-        <p className="text-white/80 text-sm">
-          Help me understand your objectives
-        </p>
+      <div style={{
+        padding: '18px 24px',
+        borderBottom: '1px solid rgba(255,255,255,0.07)',
+        background: 'linear-gradient(90deg, rgba(124,110,232,0.15) 0%, rgba(177,158,239,0.1) 100%)',
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10,
+          background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 2px 10px rgba(124,110,232,0.4)', flexShrink: 0,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="1.6">
+            <circle cx="8" cy="8" r="6"/>
+            <path d="M8 5v4l2 1" strokeLinecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Business Understanding</div>
+          <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>Tell the AI your objectives</div>
+        </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {messages.map((msg, idx) => (
-          <div
-            key={idx}
-            className={`flex ${
-              msg.role === 'user' ? 'justify-end' : 'justify-start'
-            }`}
-          >
-            <div
-              className={`max-w-[80%] p-4 rounded-2xl ${
-                msg.role === 'user'
-                  ? 'gradient-primary text-white'
-                  : 'glass text-gray-200'
-              }`}
-            >
+          <div key={idx} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div className={msg.role === 'user' ? 'chat-bubble-user' : 'chat-bubble-assistant'}>
               {msg.role === 'user' ? (
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <p style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{msg.content}</p>
               ) : (
-                <div className="prose prose-invert max-w-none prose-sm whitespace-pre-wrap
-                  prose-p:leading-tight prose-p:my-0
-                  prose-li:my-0 prose-ul:my-0 prose-ol:my-0
-                  prose-headings:text-white prose-headings:font-bold prose-headings:mt-1 prose-headings:mb-0
-                  prose-pre:bg-white/5 prose-pre:border prose-pre:border-white/10">
+                <div className="prose prose-invert max-w-none prose-sm"
+                  style={{ whiteSpace: 'pre-wrap', margin: 0 }}
+                >
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {msg.role === 'assistant' ? (msg.content || '').replace(/\n\n+/g, '\n') : (msg.content || '')}
+                    {(msg.content || '').replace(/\n\n+/g, '\n')}
                   </ReactMarkdown>
                 </div>
               )}
@@ -121,13 +124,16 @@ export default function ChatInterface({ sessionId, onComplete }) {
           </div>
         ))}
         {isLoading && (
-          <div className="flex justify-start">
-            <div className="glass p-4 rounded-2xl">
-              <div className="flex gap-2">
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                <div className="w-2 h-2 bg-secondary rounded-full animate-pulse delay-100"></div>
-                <div className="w-2 h-2 bg-accent rounded-full animate-pulse delay-200"></div>
-              </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div className="chat-bubble-assistant" style={{ display: 'flex', gap: 5, alignItems: 'center', padding: '12px 16px' }}>
+              {[0, 0.15, 0.3].map((delay, i) => (
+                <span key={i} style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: 'var(--accent-lavender)', opacity: 0.7,
+                  animation: `pulse 1.2s ease-in-out ${delay}s infinite`,
+                  display: 'inline-block',
+                }} />
+              ))}
             </div>
           </div>
         )}
@@ -135,36 +141,44 @@ export default function ChatInterface({ sessionId, onComplete }) {
       </div>
 
       {/* Input */}
-      {!conversationComplete && (
-        <div className="p-4 border-t border-white/10">
-          <div className="flex gap-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Type your response..."
-              className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-3 focus:outline-none focus:border-primary resize-none"
-              rows="2"
-              disabled={isLoading}
-            />
-            <button
-              onClick={handleSend}
-              disabled={isLoading || !input.trim()}
-              className="btn-primary self-end disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Send
-            </button>
-          </div>
+      {!conversationComplete ? (
+        <div style={{ padding: '12px 20px', borderTop: '1px solid rgba(255,255,255,0.07)', display: 'flex', gap: 10 }}>
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Describe your business objectives…"
+            className="input-field"
+            rows={2}
+            disabled={isLoading}
+            style={{ flex: 1 }}
+          />
+          <button
+            onClick={handleSend}
+            disabled={isLoading || !input.trim()}
+            className="btn-primary"
+            style={{ alignSelf: 'flex-end', opacity: (isLoading || !input.trim()) ? 0.45 : 1, cursor: (isLoading || !input.trim()) ? 'not-allowed' : 'pointer' }}
+          >
+            Send
+          </button>
+        </div>
+      ) : (
+        <div style={{
+          padding: '14px 24px',
+          borderTop: '1px solid rgba(16,217,146,0.15)',
+          background: 'rgba(16,217,146,0.06)',
+          display: 'flex', alignItems: 'center', gap: 10,
+          color: 'var(--success)', fontSize: '0.87rem', fontWeight: 500,
+        }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="8" cy="8" r="6"/>
+            <path d="m5 8 2 2 4-4" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          Business objectives captured &mdash; proceeding to analysis…
         </div>
       )}
 
-      {conversationComplete && (
-        <div className="p-4 border-t border-white/10 bg-green-500/10">
-          <p className="text-green-400 text-center">
-            ✓ Business objectives captured! Proceeding to analysis...
-          </p>
-        </div>
-      )}
+      <style>{`@keyframes pulse { 0%,100%{transform:scale(1);opacity:0.5} 50%{transform:scale(1.3);opacity:1} }`}</style>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import FileUploader from '../components/FileUploader';
@@ -11,92 +10,113 @@ export default function Home() {
     router.push(`/analysis/${data.sessionId}`);
   };
 
+  const steps = [
+    { step: 1, title: 'Upload CSV',       desc: 'Drag & drop your data file' },
+    { step: 2, title: 'ETL Processing',   desc: 'Automatic data processing' },
+    { step: 3, title: 'AI Conversation',  desc: 'Define your business objectives' },
+    { step: 4, title: 'Data Analysis',    desc: 'Deep dive into patterns & trends' },
+    { step: 5, title: 'Visualizations',   desc: 'Interactive charts & dashboards' },
+    { step: 6, title: 'AI Insights',      desc: 'Actionable recommendations' },
+  ];
+
+  const features = [
+    {
+      badge: 'badge-green',
+      label: 'ETL Engine',
+      title: 'Smart Data Processing',
+      desc: 'Automatic extract, transform and loading on your uploaded CSV data.',
+      accent: 'var(--accent-green)',
+    },
+    {
+      badge: 'badge-lavender',
+      label: 'AI Chat',
+      title: 'Business Context Understanding',
+      desc: 'Conversational AI that learns your goals and tailors every insights to your objectives.',
+      accent: 'var(--accent-lavender)',
+    },
+    {
+      badge: 'badge-pink',
+      label: 'Triple Analysis',
+      title: 'Descriptive · Predictive · Prescriptive',
+      desc: 'Three-layer insight engine that tells you what happened, what will happen and what to do.',
+      accent: 'var(--accent)',
+    },
+  ];
+
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto">
-        {/* Hero Section */}
-        <div className="text-center mb-16 animate-fade-in">
-          <div className="mb-6">
-            <h1 className="text-6xl font-bold mb-4">
-              <span className="text-gradient-primary">
-                AI-Powered
-              </span>
-              <br />
-              Data Analytics
-            </h1>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Transform your CSV data into actionable insights with advanced ETL,
-              preprocessing, and AI-driven analysis
-            </p>
-          </div>
+      <div style={{ maxWidth: 960, margin: '0 auto' }}>
 
-          <div className="flex gap-4 justify-center mb-8">
-            <div className="glass px-4 py-2 rounded-full">
-              <span className="text-sm">🚀 Automated ETL</span>
-            </div>
-            <div className="glass px-4 py-2 rounded-full">
-              <span className="text-sm">🤖 AI Insights</span>
-            </div>
-            <div className="glass px-4 py-2 rounded-full">
-              <span className="text-sm">📊 Beautiful Viz</span>
-            </div>
+        {/* ── Hero ── */}
+        <div className="animate-fade-in" style={{ textAlign: 'center', marginBottom: 56, paddingTop: 16 }}>
+          <div style={{ display: 'inline-flex', gap: 8, marginBottom: 24 }}>
+            <span className="badge badge-green">Insight under 10 minutes</span>
+            <span className="badge badge-lavender">Automated ETL Proccess</span>
+            <span className="badge badge-pink">Supported by Gemini 3 Flash</span>
+          </div>
+          <h1 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: 16 }}>
+            <span className="text-gradient">AI-Powered</span>
+            <br />
+            <span style={{ color: 'var(--foreground)' }}>Data Analytics</span>
+          </h1>
+          <p style={{ fontSize: '0.9rem', color: 'var(--muted)', maxWidth: 520, margin: '0 auto', lineHeight: 1.7 }}>
+            Upload data and get actionable insights to improve your business now!
+          </p>
+        </div>
+
+        {/* ── Upload ── */}
+        <div className="animate-fade-in animate-fade-in-delay-1">
+          <FileUploader onUploadSuccess={handleUploadSuccess} />
+        </div>
+
+        <div className="divider" style={{ margin: '48px 0' }} />
+
+        {/* ── Features ── */}
+        <div className="animate-fade-in animate-fade-in-delay-2" style={{ marginBottom: 48 }}>
+          <p className="section-label" style={{ textAlign: 'center', marginBottom: 20 }}>What you get</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 16 }}>
+            {features.map((f) => (
+              <div
+                key={f.title}
+                className="glass-strong"
+                style={{
+                  borderRadius: 14,
+                  padding: '24px',
+                  borderTop: `2px solid ${f.accent}30`,
+                  transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                }}
+                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-3px)'}
+                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+              >
+                <span className={`badge ${f.badge}`} style={{ marginBottom: 14 }}>{f.label}</span>
+                <h3 style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: 8, color: 'var(--foreground)' }}>{f.title}</h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--muted)', lineHeight: 1.65 }}>{f.desc}</p>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* File Uploader */}
-        <FileUploader onUploadSuccess={handleUploadSuccess} />
-
-        {/* Features Grid */}
-        <div className="mt-16 grid md:grid-cols-3 gap-6">
-          <div className="glass-strong p-6 rounded-2xl hover:scale-105 transition-transform animate-fade-in">
-            <div className="text-4xl mb-4">🔄</div>
-            <h3 className="text-lg font-bold mb-2">Smart ETL</h3>
-            <p className="text-gray-400 text-sm">
-              Automatic data loading, cleaning, and type inference
-            </p>
-          </div>
-
-          <div className="glass-strong p-6 rounded-2xl hover:scale-105 transition-transform animate-fade-in" style={{ animationDelay: '0.1s' }}>
-            <div className="text-4xl mb-4">💡</div>
-            <h3 className="text-lg font-bold mb-2">Business Context</h3>
-            <p className="text-gray-400 text-sm">
-              AI understands your objectives through conversation
-            </p>
-          </div>
-
-          <div className="glass-strong p-6 rounded-2xl hover:scale-105 transition-transform animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="text-4xl mb-4">🎯</div>
-            <h3 className="text-lg font-bold mb-2">Triple Analysis</h3>
-            <p className="text-gray-400 text-sm">
-              Descriptive, Predictive & Prescriptive insights
-            </p>
-          </div>
-        </div>
-
-        {/* How It Works */}
-        <div className="mt-16 glass-strong p-8 rounded-2xl animate-fade-in">
-          <h2 className="text-2xl font-bold mb-6 text-center">How It Works</h2>
-          <div className="space-y-4">
-            {[
-              { step: 1, title: 'Upload CSV', desc: 'Drag & drop your data file' },
-              { step: 2, title: 'ETL Processing', desc: 'Automatic cleaning & validation' },
-              { step: 3, title: 'AI Conversation', desc: 'Define business objectives' },
-              { step: 4, title: 'Data Analysis', desc: 'Deep dive into patterns' },
-              { step: 5, title: 'Visualizations', desc: 'Interactive charts & graphs' },
-              { step: 6, title: 'AI Insights', desc: 'Actionable recommendations' },
-            ].map((item) => (
-              <div key={item.step} className="flex items-center gap-4 p-4 glass rounded-lg hover:bg-white/10 transition">
-                <div className="w-10 h-10 gradient-primary rounded-full flex items-center justify-center text-white font-bold">
-                  {item.step}
-                </div>
+        {/* ── How It Works ── */}
+        <div className="glass-strong animate-fade-in animate-fade-in-delay-3" style={{ borderRadius: 16, padding: '32px 28px', marginBottom: 32 }}>
+          <p className="section-label" style={{ marginBottom: 6 }}>Pipeline</p>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: 24 }}>How It Works</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 10 }}>
+            {steps.map((item) => (
+              <div
+                key={item.step}
+                className="glass"
+                style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', borderRadius: 10 }}
+              >
+                <div className="step-dot active">{item.step}</div>
                 <div>
-                  <h4 className="font-semibold">{item.title}</h4>
-                  <p className="text-sm text-gray-400">{item.desc}</p>
+                  <div style={{ fontWeight: 600, fontSize: '0.87rem', marginBottom: 2 }}>{item.title}</div>
+                  <div style={{ fontSize: '0.77rem', color: 'var(--muted)' }}>{item.desc}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
+
       </div>
     </Layout>
   );
