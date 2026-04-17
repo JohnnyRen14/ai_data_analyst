@@ -153,7 +153,6 @@ After setting up the database, update your `.env` file:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
-OPENAI_API_KEY=sk-your-openai-key-here
 ```
 
 ## Verification
