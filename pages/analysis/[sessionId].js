@@ -51,13 +51,38 @@ export default function AnalysisPage() {
   const mockDataInsights = {
     descriptive: [
       { title: 'Sales Summary', finding: 'Total sales: $55,500', details: 'Average: $18,500' },
+      { title: 'Top Product', finding: 'Product B leads with $22,000', details: 'Highest performing item' },
     ],
     predictive: [
-      { title: 'Growth Forecast', forecast: 'Expecting 12% growth next quarter', confidence: 'High' },
+      { title: 'Growth Forecast', forecast: 'Expecting 12% growth next quarter', confidence: 'High', details: 'Based on trend analysis' },
+      { title: 'Peak Season', forecast: 'Q2 will see 18% increase', confidence: 'Medium', details: 'Historical patterns suggest' },
     ],
     prescriptive: [
-      { title: 'Action Item', action: 'Increase marketing for Product B', expectedOutcome: '+5% sales' },
+      { title: 'Action Item', action: 'Increase marketing for Product B', expectedOutcome: '+5% sales', details: 'Focus on digital channels' },
+      { title: 'Recommendation', action: 'Launch Product C promotion', expectedOutcome: '+3% market share', details: 'Target new customer segments' },
     ],
+    visualizations: [
+      { type: 'line', title: 'Sales Trend', xKey: 'date', yKey: 'sales' },
+      { type: 'bar', title: 'Product Performance', xKey: 'name', yKey: 'sales' },
+    ],
+    businessAnswers: [
+      { question: 'What are our top performing products?', answer: 'Product B leads with $22,000 in sales', data: [{ product: 'Product B', sales: 22000 }] },
+    ],
+  };
+
+  const mockAnalysis = {
+    descriptive: {
+      summary: 'Historical sales overview',
+      insights: ['Total revenue: $55,500', 'Average per product: $18,500'],
+    },
+    predictive: {
+      summary: 'Future sales forecast',
+      insights: ['Expected growth: 12-18%', 'Peak season: Q2'],
+    },
+    prescriptive: {
+      summary: 'Recommended actions',
+      insights: ['Increase Product B marketing', 'Launch Product C promotion'],
+    },
   };
 
   useEffect(() => {
@@ -66,6 +91,9 @@ export default function AnalysisPage() {
       setIsDemo(true);
       setEtlData(mockETLData);
       setDataInsights(mockDataInsights);
+      setVisualizations(mockDataInsights.visualizations || []);
+      setBusinessAnswers(mockDataInsights.businessAnswers || []);
+      setAnalysis(mockAnalysis);
       
       // If step param provided, jump to that step
       if (stepParam) {
