@@ -109,6 +109,18 @@ export default function AnalysisPage() {
     }
   }, [sessionId, stepParam]);
 
+  // Watch for step query parameter changes (when clicking stepper from any page)
+  useEffect(() => {
+    if (!router.isReady) return;
+    
+    if (router.query.sessionId === 'demo' && router.query.step) {
+      const step = parseInt(router.query.step, 10);
+      if (step >= 1 && step <= 7) {
+        setCurrentStep(step);
+      }
+    }
+  }, [router.isReady, router.query.sessionId, router.query.step]);
+
   const performETL = async () => {
     setLoading(true);
     try {
