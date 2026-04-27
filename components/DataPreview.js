@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import ShinyText from './ShinyText';
 
 export default function DataPreview({ data, columns, totalRows }) {
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,7 +36,15 @@ export default function DataPreview({ data, columns, totalRows }) {
     <div className="glass-strong rounded-2xl overflow-hidden animate-fade-in">
       {/* Header */}
       <div className="p-6 border-b border-white/10">
-        <h3 className="text-xl font-bold mb-2">Data Preview</h3>
+        <h3 className="text-xl font-bold mb-2">
+          <ShinyText
+            text="Data Preview"
+            speed={2.5}
+            color="#9ca3af"
+            shineColor="#ffffff"
+            pauseOnHover={true}
+          />
+        </h3>
         <p className="text-gray-400">
           Showing {displayData.length} of {totalRows} rows
         </p>

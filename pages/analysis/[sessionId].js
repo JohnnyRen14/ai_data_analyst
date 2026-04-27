@@ -5,6 +5,7 @@ import DataPreview from '../../components/DataPreview';
 import ChatInterface from '../../components/ChatInterface';
 import VisualizationPanel from '../../components/VisualizationPanel';
 import InsightsCard from '../../components/InsightsCard';
+import ShinyText from '../../components/ShinyText';
 
 const analysisStages = [
   { name: 'Upload' },
@@ -108,18 +109,6 @@ export default function AnalysisPage() {
       performETL();
     }
   }, [sessionId, stepParam]);
-
-  // Watch for step query parameter changes (when clicking stepper from any page)
-  useEffect(() => {
-    if (!router.isReady) return;
-    
-    if (router.query.sessionId === 'demo' && router.query.step) {
-      const step = parseInt(router.query.step, 10);
-      if (step >= 1 && step <= 7) {
-        setCurrentStep(step);
-      }
-    }
-  }, [router.isReady, router.query.sessionId, router.query.step]);
 
   const performETL = async () => {
     setLoading(true);
@@ -299,7 +288,7 @@ export default function AnalysisPage() {
         {/* Visualizations */}
         {currentStep >= 6 && visualizations.length > 0 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">📈 Visualizations</h2>
+            <h2 className="text-2xl font-bold mb-4">📈 <ShinyText text="Visualisations" speed={2.5} color="#9ca3af" shineColor="#ffffff" pauseOnHover={true} /></h2>
             <VisualizationPanel visualizations={visualizations} />
 
             {currentStep === 6 && (
@@ -319,7 +308,7 @@ export default function AnalysisPage() {
         {/* Data Insights: Descriptive / Predictive / Prescriptive */}
         {currentStep >= 4 && dataInsights && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">🔍 Data Insights</h2>
+            <h2 className="text-2xl font-bold mb-4">🔍 <ShinyText text="Data Insights" speed={2.5} color="#9ca3af" shineColor="#ffffff" pauseOnHover={true} /></h2>
 
             {/* Business Question Answers */}
             {businessAnswers.length > 0 && (
@@ -395,7 +384,7 @@ export default function AnalysisPage() {
             {/* Descriptive Analytics */}
             <div className="mb-8">
               <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
-                <span className="text-blue-400">📊</span> Descriptive Analytics
+                <span className="text-blue-400">📊</span> <ShinyText text="Descriptive Analytics" speed={2.5} color="#9ca3af" shineColor="#ffffff" pauseOnHover={true} />
               </h3>
               <p className="text-gray-400 text-sm mb-4">What Happened? — Analyzes historical data to understand trends and patterns.</p>
               <div className="grid md:grid-cols-2 gap-6">
@@ -412,7 +401,7 @@ export default function AnalysisPage() {
             {/* Predictive Analytics */}
             <div className="mb-8">
               <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
-                <span className="text-purple-400">🔮</span> Predictive Analytics
+                <span className="text-purple-400">🔮</span> <ShinyText text="Predictive Analytics" speed={2.5} color="#9ca3af" shineColor="#ffffff" pauseOnHover={true} />
               </h3>
               <p className="text-gray-400 text-sm mb-4">What Might Happen? — Uses historical data and pattern recognition to forecast future outcomes.</p>
               <div className="grid md:grid-cols-2 gap-6">
@@ -438,7 +427,7 @@ export default function AnalysisPage() {
             {/* Prescriptive Analytics */}
             <div className="mb-8">
               <h3 className="text-xl font-bold mb-1 flex items-center gap-2">
-                <span className="text-green-400">✅</span> Prescriptive Analytics
+                <span className="text-green-400">✅</span> <ShinyText text="Prescriptive Analytics" speed={2.5} color="#9ca3af" shineColor="#ffffff" pauseOnHover={true} />
               </h3>
               <p className="text-gray-400 text-sm mb-4">What Should We Do? — Recommends specific actions to optimize outcomes.</p>
               <div className="grid md:grid-cols-2 gap-6">
@@ -482,7 +471,7 @@ export default function AnalysisPage() {
         {/* Step 7: Analysis Results */}
         {currentStep === 7 && analysis && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">🎯 AI Analysis</h2>
+            <h2 className="text-2xl font-bold mb-4">🎯 <ShinyText text="AI Analysis" speed={2.5} color="#9ca3af" shineColor="#ffffff" pauseOnHover={true} /></h2>
             <div className="grid md:grid-cols-3 gap-6">
               <InsightsCard
                 title="Descriptive Analysis"
@@ -509,7 +498,7 @@ export default function AnalysisPage() {
         {/* Ad-hoc Query Section — available after Business Understanding is complete (step >= 4) */}
         {currentStep >= 4 && (
           <div className="mb-8">
-            <h2 className="text-2xl font-bold mb-4">💬 Ask Your Data</h2>
+            <h2 className="text-2xl font-bold mb-4">💬 <ShinyText text="Ask Your Data" speed={2.5} color="#9ca3af" shineColor="#ffffff" pauseOnHover={true} /></h2>
             <div className="glass-strong p-6 rounded-2xl">
               <form onSubmit={handleQuerySubmit} className="flex gap-3">
                 <input
