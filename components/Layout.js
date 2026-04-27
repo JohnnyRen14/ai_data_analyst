@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { AnimatedStepIndicator, AnimatedStepConnector } from './AnimatedStepIndicator';
 
 const defaultStages = [
   { name: 'Upload', path: '/' },
@@ -78,64 +79,27 @@ export default function Layout({ children, workflowStages = defaultStages, curre
           }}>
             {stages.map((stage, idx) => {
               const stepNum = idx + 1;
-              const isActive = currentStep === stepNum;
-              const isComplete = currentStep > stepNum;
-              const indicator = (
-                <div
-                  style={{
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    transition: 'all 0.2s ease',
-                    background: isActive || isComplete
-                      ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
-                      : 'rgba(255,255,255,0.08)',
-                    color: isActive || isComplete ? '#fff' : 'var(--muted)',
-                    border: isActive
-                      ? '2px solid var(--primary-light)'
-                      : '1px solid rgba(255,255,255,0.1)',
-                    cursor: stage.path ? 'pointer' : 'default',
-                  }}
-                  title={stage.name}
-                >
-                  {isComplete ? (
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M2 7l3 3 6-6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  ) : (
-                    stepNum
-                  )}
-                </div>
-              );
 
               return (
                 <div key={stepNum} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {stage.path ? (
-                    <Link
-                      href={stage.path}
-                      onClick={(e) => {
-                        e.preventDefault();
+                  <div
+                    style={{ cursor: stage.path ? 'pointer' : 'default' }}
+                    title={stage.name}
+                    onClick={() => {
+                      if (stage.path) {
                         handleStepChange(stepNum);
-                      }}
-                      style={{ textDecoration: 'none' }}
-                    >
-                      {indicator}
-                    </Link>
-                  ) : indicator}
-                  {idx < stages.length - 1 && (
-                    <div
-                      style={{
-                        width: 16,
-                        height: 1,
-                        background: isComplete ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
-                        transition: 'background 0.3s ease',
-                      }}
+                      }
+                    }}
+                  >
+                    <AnimatedStepIndicator
+                      step={stepNum}
+                      currentStep={currentStep}
+                      onClickStep={handleStepChange}
+                      disableStepIndicators={!stage.path}
                     />
+                  </div>
+                  {idx < stages.length - 1 && (
+                    <AnimatedStepConnector isComplete={currentStep > stepNum} />
                   )}
                 </div>
               );

@@ -1,4 +1,5 @@
-import "@/styles/globals.css";
+import '../components/AnimatedStepIndicator.css';
+import "../styles/globals.css";
 import Aurora from '../components/Aurora';
 
 export default function App({ Component, pageProps }) {
