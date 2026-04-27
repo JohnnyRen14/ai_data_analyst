@@ -1,4 +1,4 @@
-import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
+import { Renderer, Program, Mesh, Color, Geometry } from 'ogl';
 import { useEffect, useRef } from 'react';
 
 const VERT = `#version 300 es
@@ -147,10 +147,10 @@ export default function Aurora(props) {
     }
     window.addEventListener('resize', resize);
 
-    const geometry = new Triangle(gl);
-    if (geometry.attributes.uv) {
-      delete geometry.attributes.uv;
-    }
+    // Create fullscreen triangle geometry
+    const geometry = new Geometry(gl, {
+      position: { size: 2, data: new Float32Array([-1, -1, 3, -1, -1, 3]) },
+    });
 
     const colorStopsArray = colorStops.map((hex) => {
       const c = new Color(hex);
