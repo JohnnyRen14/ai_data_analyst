@@ -57,40 +57,8 @@ export default function AnalysisPage() {
       setCurrentStep(2);
     } catch (err) {
       setError(err.message);
-      // Set mock data to allow frontend testing
-      setMockETLData();
     } finally {
       setLoading(false);
-    }
-  };
-
-  const setMockETLData = () => {
-    const mockData = {
-      data: [
-        { id: 1, name: 'Product A', sales: 15000, date: '2024-01-15' },
-        { id: 2, name: 'Product B', sales: 22000, date: '2024-01-16' },
-        { id: 3, name: 'Product C', sales: 18500, date: '2024-01-17' },
-      ],
-      columns: ['id', 'name', 'sales', 'date'],
-      rowCount: 3,
-    };
-    setEtlData(mockData);
-    setCurrentStep(2);
-  };
-
-  const skipToNextStep = () => {
-    // Allow skipping to any next step
-    if (currentStep < 7) {
-      if (currentStep === 2) {
-        handleProceedToBusiness();
-      } else if (currentStep === 3) {
-        setCurrentStep(4);
-        generateDataInsights();
-      } else if (currentStep === 5) {
-        handleProceedToVisualizations();
-      } else {
-        setCurrentStep(currentStep + 1);
-      }
     }
   };
 
@@ -213,34 +181,6 @@ export default function AnalysisPage() {
           </div>
         )}
 
-        {/* Step 1: ETL Processing */}
-        {currentStep === 1 && !etlData && (
-          <div className="mb-8 text-center py-12">
-            <h2 className="text-2xl font-bold mb-4">📊 Processing Your Data (Step 1/6)</h2>
-            {error && (
-              <div className="mb-4 inline-block glass-strong p-4 rounded-xl border-l-4 border-yellow-500 max-w-md">
-                <p className="text-yellow-400 text-sm">{error}</p>
-              </div>
-            )}
-            <div className="mt-6 flex gap-4 justify-center">
-              <button
-                onClick={performETL}
-                className="btn-primary"
-                disabled={loading}
-              >
-                {loading ? 'Processing...' : 'Retry ETL Processing'}
-              </button>
-              <button
-                onClick={skipToNextStep}
-                className="px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition"
-                disabled={loading}
-              >
-                Skip to Next Step (Demo)
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Step 1 & 2: ETL & Data Preview */}
         {currentStep >= 2 && etlData && (
           <div className="mb-8">
@@ -260,12 +200,6 @@ export default function AnalysisPage() {
                 >
                   Proceed to Business Understanding
                 </button>
-                <button
-                  onClick={skipToNextStep}
-                  className="px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition"
-                >
-                  Skip to Step 3
-                </button>
               </div>
             )}
           </div>
@@ -279,14 +213,6 @@ export default function AnalysisPage() {
               sessionId={sessionId}
               onComplete={handleBusinessComplete}
             />
-            <div className="mt-6 flex gap-4">
-              <button
-                onClick={skipToNextStep}
-                className="px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition"
-              >
-                Skip to Step 4
-              </button>
-            </div>
           </div>
         )}
 
@@ -304,12 +230,6 @@ export default function AnalysisPage() {
                   disabled={loading}
                 >
                   Generate Final Analysis
-                </button>
-                <button
-                  onClick={skipToNextStep}
-                  className="px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-medium transition"
-                >
-                  Skip to Step 6
                 </button>
               </div>
             )}
