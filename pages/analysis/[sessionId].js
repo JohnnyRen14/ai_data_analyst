@@ -19,6 +19,7 @@ const analysisStages = [
 export default function AnalysisPage() {
   const router = useRouter();
   const { sessionId } = router.query;
+  const { step: stepParam } = router.query;
 
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -28,6 +29,7 @@ export default function AnalysisPage() {
   const [visualizations, setVisualizations] = useState([]);
   const [analysis, setAnalysis] = useState(null);
   const [error, setError] = useState(null);
+  const [isDemo, setIsDemo] = useState(false);
 
   // Ad-hoc query state
   const [queryInput, setQueryInput] = useState('');
@@ -35,11 +37,49 @@ export default function AnalysisPage() {
   const [queryResults, setQueryResults] = useState([]);
   const queryInputRef = useRef(null);
 
+  // Mock ETL data for demo
+  const mockETLData = {
+    data: [
+      { id: 1, name: 'Product A', sales: 15000, date: '2024-01-15' },
+      { id: 2, name: 'Product B', sales: 22000, date: '2024-01-16' },
+      { id: 3, name: 'Product C', sales: 18500, date: '2024-01-17' },
+    ],
+    columns: ['id', 'name', 'sales', 'date'],
+    rowCount: 3,
+  };
+
+  const mockDataInsights = {
+    descriptive: [
+      { title: 'Sales Summary', finding: 'Total sales: $55,500', details: 'Average: $18,500' },
+    ],
+    predictive: [
+      { title: 'Growth Forecast', forecast: 'Expecting 12% growth next quarter', confidence: 'High' },
+    ],
+    prescriptive: [
+      { title: 'Action Item', action: 'Increase marketing for Product B', expectedOutcome: '+5% sales' },
+    ],
+  };
+
   useEffect(() => {
-    if (sessionId) {
+    if (sessionId === 'demo') {
+      // Demo mode - load mock data
+      setIsDemo(true);
+      setEtlData(mockETLData);
+      setDataInsights(mockDataInsights);
+      
+      // If step param provided, jump to that step
+      if (stepParam) {
+        const step = parseInt(stepParam, 10);
+        if (step >= 1 && step <= 7) {
+          setCurrentStep(step);
+        }
+      } else {
+        setCurrentStep(2); // Default to ETL & Preview
+      }
+    } else if (sessionId) {
       performETL();
     }
-  }, [sessionId]);
+  }, [sessionId, stepParam]);
 
   const performETL = async () => {
     setLoading(true);

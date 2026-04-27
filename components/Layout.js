@@ -2,13 +2,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 
 const defaultStages = [
-  { name: 'Upload' },
-  { name: 'ETL & Preview' },
-  { name: 'Business Goals' },
-  { name: 'Generating Insights' },
-  { name: 'Data Insights' },
-  { name: 'Visualizations' },
-  { name: 'Analysis' },
+  { name: 'Upload', path: '/' },
+  { name: 'ETL & Preview', path: '/etl' },
+  { name: 'Preprocessing', path: '/preprocessing' },
+  { name: 'Business Goals', path: '/business' },
+  { name: 'Data Insights', path: '/insights' },
+  { name: 'Visualizations', path: '/visualizations' },
+  { name: 'Analysis', path: '/analysis' },
 ];
 
 export default function Layout({ children, workflowStages = defaultStages, currentStepOverride }) {
@@ -16,12 +16,9 @@ export default function Layout({ children, workflowStages = defaultStages, curre
   const stages = workflowStages?.length ? workflowStages : defaultStages;
 
   const getRouteStep = () => {
-    // Since all workflow happens on /analysis/[sessionId], default to step 1
-    // The actual step is controlled by currentStepOverride from the analysis page
-    if (router.pathname === '/analysis/[sessionId]') {
-      return 2; // ETL & Preview step
-    }
-    return 1; // Default to Upload step
+    const pathname = router.pathname === '/analysis/[sessionId]' ? '/analysis' : router.pathname;
+    const pathIndex = stages.findIndex((stage) => stage.path === pathname);
+    return pathIndex >= 0 ? pathIndex + 1 : 1;
   };
 
   const currentStep = Number.isFinite(currentStepOverride)
@@ -29,10 +26,8 @@ export default function Layout({ children, workflowStages = defaultStages, curre
     : getRouteStep();
 
   const handleStepChange = (stepNum) => {
-    const path = stages[stepNum - 1]?.path;
-    if (path) {
-      router.push(path);
-    }
+    // Navigate to analysis page with demo session and step parameter
+    router.push(`/analysis/demo?step=${stepNum}`);
   };
 
   return (
