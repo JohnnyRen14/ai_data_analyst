@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router';
 import Layout from '../components/Layout';
 import FileUploader from '../components/FileUploader';
+import ShinyText from '../components/ShinyText';
 
 export default function Home() {
   const router = useRouter();
@@ -55,7 +56,17 @@ export default function Home() {
             <span className="badge badge-pink">Supported by Gemini 3 Flash</span>
           </div>
           <h1 style={{ fontSize: 'clamp(2.2rem, 5vw, 3.6rem)', fontWeight: 800, lineHeight: 1.15, letterSpacing: '-0.03em', marginBottom: 16 }}>
-            <span className="text-gradient">AI-Powered</span>
+            <ShinyText
+              text="AI-Powered"
+              speed={3}
+              delay={0.5}
+              color="#6366f1"
+              shineColor="#ffffff"
+              spread={120}
+              direction="left"
+              yoyo={false}
+              pauseOnHover={true}
+            />
             <br />
             <span style={{ color: 'var(--foreground)' }}>Data Analytics</span>
           </h1>
